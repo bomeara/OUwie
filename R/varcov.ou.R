@@ -33,6 +33,7 @@ varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.
         n.cov2=matrix(rep(0,n), n, 1)
         
         if(simmap.tree==TRUE){
+            regimeindex<-colnames(phy$mapped.edge)
             for(i in 1:length(edges[,1])){
                 anc = edges[i, 2]
                 desc = edges[i, 3]
@@ -94,13 +95,14 @@ varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.
         }
         vcv1 <- mat.gen(phy,n.cov1,pp)
         vcv2 <- mat.gen(phy,n.cov2,pp)
-		save(vcv1, vcv2, n.cov1, n.cov2, edges, file="vcv.Rsave")
         if(any(abs(diff(alpha)) > 0)){
             species.variances <- diag(vcv1)
             species.total.variances <- matrix(0, dim(vcv1)[2], dim(vcv1)[2])
+            count=0
             for(i in 1:dim(vcv1)[2]) {
                 for(j in 1:dim(vcv1)[2]){
-					species.total.variances[i,j] <- exp(-(species.variances[i] + species.variances[j]))
+                    species.total.variances[i,j] <- exp(-(species.variances[i] + species.variances[j]))
+                    count=count+1 # the count is always watching
                 }
             }
             vcv <- species.total.variances * vcv2
@@ -114,6 +116,180 @@ varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.
     vcv
 }
 
+# to allow easier traversal and storage of tree structure
+# assumes a simmap tree
+create_enhanced_tree_structure <- function(phy) {
+	new_structure <- data.frame(matrix(nrow=0, ncol=12))
+	colnames(new_structure) <- c("edge_num", "rootward_treenode", "tipward_treenode", "tip_label", "rootward_mapnode", "tipward_mapnode", "segment_length", "parent_row", "regime", "tip_number", "rootward_height", "tipward_height")
+	phy <- ape::reorder.phylo(phy, "postorder") # which goes from root to tips if we start at the bottom and work up
+	heights <- phytools::nodeHeights(phy)
+	for(i in rev(sequence(length(phy$edge[,1])))) {
+		edge_num <- i
+		rootward_treenode <- phy$edge[i, 1]
+		tipward_treenode <- phy$edge[i, 2]
+		rootward_height_treenode <- heights[i, 1]
+		rootward_height_segment <- rootward_height_treenode
+		tip_label <- ifelse(tipward_treenode <= length(phy$tip.label), phy$tip.label[tipward_treenode], NA)
+		for (regime_index in sequence(length(phy$maps[[i]]))) {
+			# for each regime segment on this edge, we need a row
+			rootward_mapnode <- ifelse(regime_index == 1, 0, regime_index-1)
+			tipward_mapnode <- regime_index
+			segment_length <- phy$maps[[i]][regime_index]
+			tipward_height_segment <- rootward_height_segment + segment_length
+			parent_row <- nrow(new_structure) 
+			if(regime_index == 1) {
+				# find the parent row
+				if(rootward_treenode %in% phy$edge[,2]) {
+					parent_edge <- which(phy$edge[,2] == rootward_treenode)
+					parent_row <- max(which(new_structure$edge_num == parent_edge & new_structure$tipward_mapnode == max(new_structure$tipward_mapnode[new_structure$edge_num == parent_edge])))
+				} else {
+					parent_row <- NA
+				}	
+			}
+			tip_label_local <- ifelse(regime_index == length(phy$maps[[i]]), tip_label, NA) # only the last segment gets the tip label
+			tip_number <- ifelse(regime_index == length(phy$maps[[i]]) & tipward_treenode <= length(phy$tip.label), tipward_treenode, NA) 
+			regime <- names(phy$maps[[i]])[regime_index]
+			new_structure <- rbind(new_structure, data.frame(edge_num, rootward_treenode, tipward_treenode, tip_label, rootward_mapnode, tipward_mapnode, segment_length, parent_row, regime, tip_number, rootward_height_segment, tipward_height_segment))
+			rootward_height_segment <- tipward_height_segment
+		}
+	}
+	rownames(new_structure) <- NULL
+	return(new_structure)
+
+}
+
+# Added by Brian O'Meara incorporating insights provided by Priscilla Lau. 
+
+varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, root.age=NULL, scaleHeight=FALSE){
+	ntax <- max(enhanced_tree$tip_number, na.rm=TRUE)
+	enhanced_tree$alpha <- Rate.mat[1,enhanced_tree$regime]
+	enhanced_tree$sigma_squared <- Rate.mat[2,enhanced_tree$regime]
+	enhanced_tree$alpha_t <- enhanced_tree$alpha * enhanced_tree$segment_length
+	enhanced_tree$exp_2alpha_t <- exp(2 * enhanced_tree$alpha_t)
+	vcv <- matrix(0, ntax, ntax)
+	mrca_cache <- ape::mrca(phy)
+	root_node_row <- which(enhanced_tree$parent_row == NA)[1]
+	for (row_index in sequence(ntax)) {
+		for (col_index in sequence(ntax)) {
+			if(col_index < row_index) {
+				next
+			}
+			
+			# along each descendant path
+			
+			mrca_node <- mrca_cache[row_index, col_index]
+			left_sum <- traverse_down_for_vcv(enhanced_tree, row_index, mrca_node)
+			right_sum <- traverse_down_for_vcv(enhanced_tree, col_index, mrca_node)
+			exp_part <- exp(-(left_sum + right_sum))
+			stem_part <- traverse_to_root_from_mrca(enhanced_tree, mrca_node)
+			vcv[row_index, col_index] <- stem_part * exp_part
+			
+			
+			
+			
+		}
+	}
+	return(vcv)
+}
+
+traverse_down_for_vcv <- function(enhanced_tree, start_tip, end_node) {
+	running_sum <- 0
+	current_row <- max(which(enhanced_tree$tip_number == start_tip))
+	while(!is.na(current_row)) {
+		running_sum <- running_sum + enhanced_tree$alpha_t[current_row]
+		current_row <- enhanced_tree$parent_row[current_row]
+		if(enhanced_tree$tipward_treenode[current_row] == end_node) {
+			break
+		}
+	}
+	return(running_sum)
+}
+
+traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
+	running_sum <- 0
+	current_row <- max(which(enhanced_tree$tip_number == start_tip))
+	while(!is.na(current_row)) {
+		running_sum <- running_sum + enhanced_tree$sigma_squared[current_row] * (exp(2*enhanced_tree$alpha[current_row]*enhanced_tree$tipward_height_segment[current_row]) - exp( 2*enhanced_tree$alpha[current_row]*enhanced_tree$rootward_height_segment[current_row] ) ) / (2 * enhanced_tree$alpha[current_row])
+		current_row <- enhanced_tree$parent_row[current_row]
+		if(enhanced_tree$tipward_treenode[current_row] == end_node) {
+			break
+		}
+	}
+	return(running_sum)
+}
+
+# Modified by Brian O'Meara incorporating insights provided by Priscilla Lau. 
+
+# For simplicity, it MUST be a simmap tree, we don't assume stationarity
+
+varcov.ou.corrected <- function(phy, edges, Rate.mat, root.state, root.age=NULL, scaleHeight=FALSE){
+    
+
+	if(is.null(root.state)) {
+		root.state <- which(edges[dim(edges)[1],]==1)-5
+		edges <- edges[-1*dim(edges)[1],]
+	}
+	n=max(phy$edge[,1])
+	ntips=length(phy$tip.label)
+	k=length(colnames(phy$mapped.edge))
+	
+	
+	pp <- prop.part(phy)
+	oldregime=root.state
+	nodevar1=rep(0,max(edges[,3]))
+	nodevar2=rep(0,max(edges[,3]))
+	alpha=Rate.mat[1,]
+	sigma=Rate.mat[2,]
+	n.cov1=matrix(rep(0,n), n, 1)
+	n.cov2=matrix(rep(0,n), n, 1)
+	
+	vcv <- matrix(0, n, n)
+	
+	regimeindex<-colnames(phy$mapped.edge)
+	for(i in 1:length(edges[,1])){
+		anc = edges[i, 2]
+		desc = edges[i, 3]
+		
+		if(scaleHeight==TRUE){
+			currentmap<-phy$maps[[i]]/max(MakeAgeTable(phy, root.age=root.age))
+		}
+		else{
+			currentmap <- phy$maps[[i]]
+		}
+		oldtime=edges[i,4]
+		for (regimeindex in 1:length(currentmap)){
+			regimeduration <- currentmap[regimeindex]
+			newtime <- oldtime+regimeduration
+			regimenumber <- which(colnames(phy$mapped.edge)==names(currentmap)[regimeindex])
+			nodevar1[i] <- nodevar1[i]+alpha[regimenumber]*(newtime-oldtime)
+			nodevar2[i] <- nodevar2[i]+sigma[regimenumber]*((exp(2*alpha[regimenumber]*newtime)-exp(2*alpha[regimenumber]*oldtime))/(2*alpha[regimenumber]))
+			oldtime <- newtime
+			newregime <- regimenumber
+		}
+		oldregime=newregime
+		n.cov1[edges[i,3],]=nodevar1[i]
+		n.cov2[edges[i,3],]=nodevar2[i]
+	}
+	vcv1 <- mat.gen(phy,n.cov1,pp)
+	vcv2 <- mat.gen(phy,n.cov2,pp)
+	if(any(abs(diff(alpha)) > 0)){
+		species.variances <- diag(vcv1)
+		species.total.variances <- matrix(0, dim(vcv1)[2], dim(vcv1)[2])
+		for(i in 1:dim(vcv1)[2]) {
+			for(j in 1:dim(vcv1)[2]){
+				species.total.variances[i,j] <- exp(-(species.variances[i] + species.variances[j]))
+			}
+		}
+		vcv <- species.total.variances * vcv2
+	}else{
+		if(is.null(root.age)){
+			root.age <- max(branching.times(phy))
+		}
+		vcv <- exp(-2*alpha[1]*max(root.age)) * vcv2
+	}
+    
+    vcv
+}
 
 ## Quick VCV maker of OU1 and OUM -- since alpha and sigma.sq are constants, and since the regime does not matter, we can just do a simple plug and chug. It's a tad slower, but mostly for testing purposes.
 quickVCV <- function(phy, alpha, sigma.sq, scaleHeight){
