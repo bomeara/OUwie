@@ -162,13 +162,15 @@ create_enhanced_tree_structure <- function(phy) {
 
 varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, root.age=NULL, scaleHeight=FALSE){
 	ntax <- max(enhanced_tree$tip_number, na.rm=TRUE)
-	enhanced_tree$alpha <- Rate.mat[1,enhanced_tree$regime]
-	enhanced_tree$sigma_squared <- Rate.mat[2,enhanced_tree$regime]
+	enhanced_tree$alpha <- Rate.mat[1,as.numeric(enhanced_tree$regime)]
+	enhanced_tree$sigma_squared <- Rate.mat[2,as.numeric(enhanced_tree$regime)]
 	enhanced_tree$alpha_t <- enhanced_tree$alpha * enhanced_tree$segment_length
 	enhanced_tree$exp_2alpha_t <- exp(2 * enhanced_tree$alpha_t)
 	vcv <- matrix(0, ntax, ntax)
+	rownames(vcv) <- phy$tip.label
+	colnames(vcv) <- phy$tip.label
 	mrca_cache <- ape::mrca(phy)
-	root_node_row <- which(enhanced_tree$parent_row == NA)[1]
+	root_node_row <- which(is.na(enhanced_tree$parent_row))[1]
 	for (row_index in sequence(ntax)) {
 		for (col_index in sequence(ntax)) {
 			if(col_index < row_index) {
@@ -178,11 +180,19 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 			# along each descendant path
 			
 			mrca_node <- mrca_cache[row_index, col_index]
+			
+			
 			left_sum <- traverse_down_for_vcv(enhanced_tree, row_index, mrca_node)
 			right_sum <- traverse_down_for_vcv(enhanced_tree, col_index, mrca_node)
 			exp_part <- exp(-(left_sum + right_sum))
+			
+			# from mrca to root
 			stem_part <- traverse_to_root_from_mrca(enhanced_tree, mrca_node)
 			vcv[row_index, col_index] <- stem_part * exp_part
+			
+			print(paste0("Computed VCV[", row_index, ",", col_index, "] = ", vcv[row_index, col_index]))
+			print(paste0("   left sum: ", left_sum, "; right sum: ", right_sum, "; exp part: ", exp_part, "; stem part: ", stem_part))
+			print(paste0("   mrca node: ", mrca_node))
 			
 		}
 	}
@@ -205,6 +215,9 @@ traverse_down_for_vcv <- function(enhanced_tree, start_tip, end_node) {
 	while(!is.na(current_row)) {
 		running_sum <- running_sum + enhanced_tree$alpha_t[current_row]
 		current_row <- enhanced_tree$parent_row[current_row]
+		if(is.na(current_row)) {
+			break
+		}
 		if(enhanced_tree$tipward_treenode[current_row] == end_node) {
 			break
 		}
@@ -214,11 +227,15 @@ traverse_down_for_vcv <- function(enhanced_tree, start_tip, end_node) {
 
 traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 	running_sum <- 0
-	current_row <- max(which(enhanced_tree$tip_number == start_tip))
+	matching_rows <- which(enhanced_tree$tipward_treenode == end_node)
+	if(length(matching_rows) == 0) {
+		return(0)
+	}
+	current_row <- max(matching_rows)
 	while(!is.na(current_row)) {
 		running_sum <- running_sum + enhanced_tree$sigma_squared[current_row] * (exp(2*enhanced_tree$alpha[current_row]*enhanced_tree$tipward_height_segment[current_row]) - exp( 2*enhanced_tree$alpha[current_row]*enhanced_tree$rootward_height_segment[current_row] ) ) / (2 * enhanced_tree$alpha[current_row])
 		current_row <- enhanced_tree$parent_row[current_row]
-		if(enhanced_tree$tipward_treenode[current_row] == end_node) {
+		if(is.na(current_row)) {
 			break
 		}
 	}
