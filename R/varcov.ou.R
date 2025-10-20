@@ -184,11 +184,18 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 			stem_part <- traverse_to_root_from_mrca(enhanced_tree, mrca_node)
 			vcv[row_index, col_index] <- stem_part * exp_part
 			
-			
-			
-			
 		}
 	}
+	
+	# fill in lower triangle
+	for (row_index in sequence(ntax)) {
+		for (col_index in sequence(ntax)) {
+			if(col_index < row_index) {
+				vcv[row_index, col_index] <- vcv[col_index, row_index]
+			}
+		}
+	}
+	
 	return(vcv)
 }
 
@@ -216,79 +223,6 @@ traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 		}
 	}
 	return(running_sum)
-}
-
-# Modified by Brian O'Meara incorporating insights provided by Priscilla Lau. 
-
-# For simplicity, it MUST be a simmap tree, we don't assume stationarity
-
-varcov.ou.corrected <- function(phy, edges, Rate.mat, root.state, root.age=NULL, scaleHeight=FALSE){
-    
-
-	if(is.null(root.state)) {
-		root.state <- which(edges[dim(edges)[1],]==1)-5
-		edges <- edges[-1*dim(edges)[1],]
-	}
-	n=max(phy$edge[,1])
-	ntips=length(phy$tip.label)
-	k=length(colnames(phy$mapped.edge))
-	
-	
-	pp <- prop.part(phy)
-	oldregime=root.state
-	nodevar1=rep(0,max(edges[,3]))
-	nodevar2=rep(0,max(edges[,3]))
-	alpha=Rate.mat[1,]
-	sigma=Rate.mat[2,]
-	n.cov1=matrix(rep(0,n), n, 1)
-	n.cov2=matrix(rep(0,n), n, 1)
-	
-	vcv <- matrix(0, n, n)
-	
-	regimeindex<-colnames(phy$mapped.edge)
-	for(i in 1:length(edges[,1])){
-		anc = edges[i, 2]
-		desc = edges[i, 3]
-		
-		if(scaleHeight==TRUE){
-			currentmap<-phy$maps[[i]]/max(MakeAgeTable(phy, root.age=root.age))
-		}
-		else{
-			currentmap <- phy$maps[[i]]
-		}
-		oldtime=edges[i,4]
-		for (regimeindex in 1:length(currentmap)){
-			regimeduration <- currentmap[regimeindex]
-			newtime <- oldtime+regimeduration
-			regimenumber <- which(colnames(phy$mapped.edge)==names(currentmap)[regimeindex])
-			nodevar1[i] <- nodevar1[i]+alpha[regimenumber]*(newtime-oldtime)
-			nodevar2[i] <- nodevar2[i]+sigma[regimenumber]*((exp(2*alpha[regimenumber]*newtime)-exp(2*alpha[regimenumber]*oldtime))/(2*alpha[regimenumber]))
-			oldtime <- newtime
-			newregime <- regimenumber
-		}
-		oldregime=newregime
-		n.cov1[edges[i,3],]=nodevar1[i]
-		n.cov2[edges[i,3],]=nodevar2[i]
-	}
-	vcv1 <- mat.gen(phy,n.cov1,pp)
-	vcv2 <- mat.gen(phy,n.cov2,pp)
-	if(any(abs(diff(alpha)) > 0)){
-		species.variances <- diag(vcv1)
-		species.total.variances <- matrix(0, dim(vcv1)[2], dim(vcv1)[2])
-		for(i in 1:dim(vcv1)[2]) {
-			for(j in 1:dim(vcv1)[2]){
-				species.total.variances[i,j] <- exp(-(species.variances[i] + species.variances[j]))
-			}
-		}
-		vcv <- species.total.variances * vcv2
-	}else{
-		if(is.null(root.age)){
-			root.age <- max(branching.times(phy))
-		}
-		vcv <- exp(-2*alpha[1]*max(root.age)) * vcv2
-	}
-    
-    vcv
 }
 
 ## Quick VCV maker of OU1 and OUM -- since alpha and sigma.sq are constants, and since the regime does not matter, we can just do a simple plug and chug. It's a tad slower, but mostly for testing purposes.
