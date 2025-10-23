@@ -9,7 +9,7 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA),
 #and the multiple alphas and sigmas (OUMVA).
 
-OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none", starting.vals=NULL, check.identify=TRUE, algorithm=c("invert", "three.point"), diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000", "ftol_rel"=.Machine$double.eps^0.5)){
+OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none", starting.vals=NULL, check.identify=TRUE, algorithm=c("invert", "three.point"), diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000", "ftol_rel"=.Machine$double.eps^0.5), corrected=TRUE){
 	if(model %in% c("OUMA", "OUMVA", "OUVA")) {
 		warning("From feedback from a user, we have concerns about the likelihood function for the OUMA and OUMVA models. As of Sept. 4, 2025, we recommend not using these models for now, but we expect the situation to be resolved soon (either with corrected likelihood functions or a definite proof that they are ok as is). That said, we leave these as options for reproducibility and debugging. If you do use them, be sure to note the package version and report this in your work.", call.=FALSE, immediate.=TRUE)	
 	}
@@ -359,7 +359,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 	}
 
 	#Likelihood function for estimating model parameters
-	dev <- function(p, index.mat, edges, tip.fog, trendy, get.root.theta){
+	dev <- function(p, index.mat, edges, tip.fog, trendy, get.root.theta, corrected){
 		if(trendy == 0){
             p <- exp(p)
             if(tip.fog=="estimate"){
@@ -370,12 +370,12 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
             if(get.root.theta == TRUE){
                 W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=FALSE, shift.point=shift.point)
             }else{
-                W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point)
+                W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point, corrected=corrected)
             }
             
             if(algorithm == "invert"){
                 N <- length(x[,1])
-                V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point)
+                V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point, corrected=corrected)
                 
                 if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)
                 if(tip.fog=="known"){
@@ -437,7 +437,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
             Rate.mat[] <- c(p, 1e-10)[index.mat]
             N <- length(x[,1])
             root.par.index <- length(p)
-            V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point)
+            V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point, corrected=corrected)
             if (any(is.nan(diag(V))) || any(is.infinite(diag(V)))) return(1000000)
             if(tip.fog=="known"){
                 diag(V)<-diag(V)+(data[,3]^2)
@@ -634,7 +634,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 	out$new.starting <- out$solution # note: back in regular param space, not log space used in the search
 	
     #Takes estimated parameters from dev and calculates theta for each regime:
-	dev.theta <- function(p, index.mat, edges=edges, tip.fog=tip.fog){
+	dev.theta <- function(p, index.mat, edges=edges, tip.fog=tip.fog, corrected=corrected){
 		
         if(tip.fog=="estimate"){
             sigma.sq.me <- p[length(p)]
@@ -643,7 +643,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 
         Rate.mat[] <- c(p, 1e-10)[index.mat]
 		N <- length(x[,1])
-		V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point)
+		V <- varcov.ou(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=root.station, shift.point=shift.point, corrected=corrected)
         
         if(get.root.theta == TRUE){
             W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=FALSE, shift.point=shift.point)

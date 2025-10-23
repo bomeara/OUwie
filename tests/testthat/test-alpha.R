@@ -297,12 +297,14 @@ test_that("testing vcv bm1", {
 		colnames(tree$mapped.edge) == names(tree$maps[[root.edge.index[2]]][1])
 	)
 
+	enhanced_tree <- OUwie:::create_enhanced_tree_structure(tree)
+	
 	Rate.mat <- matrix(0, nrow=2, ncol=2)
 	Rate.mat[1,] <- alpha
 	Rate.mat[2,] <- sigma.sq
 	ouwie_vcv <- OUwie:::varcov.ou.enhanced.tree(
 		phy = tree,
-		enhanced_tree = OUwie:::create_enhanced_tree_structure(tree),
+		enhanced_tree = enhanced_tree,
 		Rate.mat = Rate.mat,
 		root.state = root.state,
 		root.age = NULL,

@@ -1,8 +1,23 @@
+varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=.5, corrected=TRUE, enhanced_tree=NULL) {
+	if(corrected & simmap.tree) {
+		if(is.null(enhanced_tree)) {
+			enhanced_tree <- create_enhanced_tree_structure(phy)
+		}
+		return(varcov.ou.enhanced.tree (phy, enhanced_tree, Rate.mat, root.state, root.age, scaleHeight))
+	} else {
+		return(varcov.ou.original(phy, edges, Rate.mat, root.state, simmap.tree, root.age, scaleHeight, assume.station, shift.point))
+	}
+}
+
+
+
 #OU variance-covariance matrix generator
 
 #written by Jeremy M. Beaulieu
 
-varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=.5){
+
+
+varcov.ou.original <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=.5){
     
     if(assume.station == TRUE){
         alpha=Rate.mat[1,1]
@@ -119,9 +134,9 @@ varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.
 # to allow easier traversal and storage of tree structure
 # assumes a simmap tree
 create_enhanced_tree_structure <- function(phy) {
-	new_structure <- data.frame(matrix(nrow=0, ncol=12))
-	colnames(new_structure) <- c("edge_num", "rootward_treenode", "tipward_treenode", "tip_label", "rootward_mapnode", "tipward_mapnode", "segment_length", "parent_row", "regime", "tip_number", "rootward_height", "tipward_height")
-	phy <- ape::reorder.phylo(phy, "postorder") # which goes from root to tips if we start at the bottom and work up
+	new_structure <- data.frame(matrix(nrow=0, ncol=13))
+	colnames(new_structure) <- c("edge_num", "rootward_treenode", "tipward_treenode", "tip_label", "rootward_mapnode", "tipward_mapnode", "segment_length", "parent_row", "regime", "tip_number", "rootward_height", "tipward_height", "segment_index")
+	#phy <- ape::reorder.phylo(phy, "postorder") # which goes from root to tips if we start at the bottom and work up. But reordering in ape does not reorder the maps!!!
 	heights <- phytools::nodeHeights(phy)
 	for(i in rev(sequence(length(phy$edge[,1])))) {
 		edge_num <- i
@@ -130,27 +145,57 @@ create_enhanced_tree_structure <- function(phy) {
 		rootward_height_treenode <- heights[i, 1]
 		rootward_height_segment <- rootward_height_treenode
 		tip_label <- ifelse(tipward_treenode <= length(phy$tip.label), phy$tip.label[tipward_treenode], NA)
-		for (regime_index in sequence(length(phy$maps[[i]]))) {
+		for (segment_index in sequence(length(phy$maps[[i]]))) {
 			# for each regime segment on this edge, we need a row
-			rootward_mapnode <- ifelse(regime_index == 1, 0, regime_index-1)
-			tipward_mapnode <- regime_index
-			segment_length <- phy$maps[[i]][regime_index]
+			rootward_mapnode <- ifelse(segment_index == 1, 0, regime_index - 1)
+			tipward_mapnode <- segment_index
+			segment_length <- phy$maps[[i]][segment_index]
 			tipward_height_segment <- rootward_height_segment + segment_length
-			parent_row <- nrow(new_structure) 
-			if(regime_index == 1) {
+			parent_row <- NA
+			if (segment_index > 1) {
+				parent_row <- nrow(new_structure)
+			} else {
 				# find the parent row
-				if(rootward_treenode %in% phy$edge[,2]) {
-					parent_edge <- which(phy$edge[,2] == rootward_treenode)
-					parent_row <- max(which(new_structure$edge_num == parent_edge & new_structure$tipward_mapnode == max(new_structure$tipward_mapnode[new_structure$edge_num == parent_edge])))
-				} else {
-					parent_row <- NA
-				}	
+				# if (rootward_treenode %in% phy$edge[, 2]) {
+				# 	parent_edge <- which(phy$edge[, 2] == rootward_treenode)
+				# 	parent_row <- max(which(
+				# 		new_structure$edge_num == parent_edge &
+				# 			new_structure$tipward_mapnode ==
+				# 				max(new_structure$tipward_mapnode[
+				# 					new_structure$edge_num == parent_edge
+				# 				])
+				# 	))
+				# } else {
+				# 	parent_row <- NA
+				# }
 			}
-			tip_label_local <- ifelse(regime_index == length(phy$maps[[i]]), tip_label, NA) # only the last segment gets the tip label
-			tip_number <- ifelse(regime_index == length(phy$maps[[i]]) & tipward_treenode <= length(phy$tip.label), tipward_treenode, NA) 
-			regime <- names(phy$maps[[i]])[regime_index]
-			new_structure <- rbind(new_structure, data.frame(edge_num, rootward_treenode, tipward_treenode, tip_label, rootward_mapnode, tipward_mapnode, segment_length, parent_row, regime, tip_number, rootward_height_segment, tipward_height_segment))
+			tip_label_local <- ifelse(segment_index == length(phy$maps[[i]]), tip_label, NA) # only the last segment gets the tip label
+			tip_number <- ifelse(
+				segment_index == length(phy$maps[[i]]) &
+					tipward_treenode <= length(phy$tip.label),
+				tipward_treenode,
+				NA
+			) 
+			regime <- names(phy$maps[[i]])[segment_index]
+			new_structure <- rbind(new_structure, data.frame(edge_num, rootward_treenode, tipward_treenode, tip_label, rootward_mapnode, tipward_mapnode, segment_length, parent_row, regime, tip_number, rootward_height_segment, tipward_height_segment, segment_index))
 			rootward_height_segment <- tipward_height_segment
+		}
+	}
+	for (i in sequence(nrow(new_structure))) {
+		if (new_structure$segment_index[i] == 1) {
+			if (new_structure$rootward_treenode[i] %in% phy$edge[, 2]) {
+				parent_edge <- which(
+					phy$edge[, 2] == new_structure$rootward_treenode[i]
+				)
+				parent_row <- max(which(
+					new_structure$edge_num == parent_edge &
+						new_structure$tipward_mapnode ==
+							max(new_structure$tipward_mapnode[
+								new_structure$edge_num == parent_edge
+							])
+				))
+				new_structure$parent_row[i] <- parent_row
+			}
 		}
 	}
 	rownames(new_structure) <- NULL
@@ -188,12 +233,7 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 			
 			# from mrca to root
 			stem_part <- traverse_to_root_from_mrca(enhanced_tree, mrca_node)
-			vcv[row_index, col_index] <- stem_part * exp_part
-			
-			print(paste0("Computed VCV[", row_index, ",", col_index, "] = ", vcv[row_index, col_index]))
-			print(paste0("   left sum: ", left_sum, "; right sum: ", right_sum, "; exp part: ", exp_part, "; stem part: ", stem_part))
-			print(paste0("   mrca node: ", mrca_node))
-			
+			vcv[row_index, col_index] <- stem_part * exp_part			
 		}
 	}
 	
@@ -232,10 +272,22 @@ traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 		return(0)
 	}
 	current_row <- max(matching_rows)
-	while(!is.na(current_row)) {
-		running_sum <- running_sum + enhanced_tree$sigma_squared[current_row] * (exp(2*enhanced_tree$alpha[current_row]*enhanced_tree$tipward_height_segment[current_row]) - exp( 2*enhanced_tree$alpha[current_row]*enhanced_tree$rootward_height_segment[current_row] ) ) / (2 * enhanced_tree$alpha[current_row])
+	while (!is.na(current_row)) {
+		running_sum <- running_sum +
+			enhanced_tree$sigma_squared[current_row] *
+				(exp(
+					2 *
+						enhanced_tree$alpha[current_row] *
+						enhanced_tree$tipward_height_segment[current_row]
+				) -
+					exp(
+						2 *
+							enhanced_tree$alpha[current_row] *
+							enhanced_tree$rootward_height_segment[current_row]
+					)) /
+				(2 * enhanced_tree$alpha[current_row])
 		current_row <- enhanced_tree$parent_row[current_row]
-		if(is.na(current_row)) {
+		if (is.na(current_row)) {
 			break
 		}
 	}
