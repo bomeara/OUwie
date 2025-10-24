@@ -370,7 +370,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
             if(get.root.theta == TRUE){
                 W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=FALSE, shift.point=shift.point)
             }else{
-                W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point, corrected=corrected)
+                W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point)
             }
             
             if(algorithm == "invert"){
@@ -575,7 +575,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
            lower <- c(lower, log(lb))
            upper <- c(upper, log(ub))
         } 
-		out <- nloptr(x0=log(ip), eval_f=dev, lb=fix_lower(lower, log(ip)), ub=fix_upper(upper, log(ip)), opts=opts, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta)
+		out <- nloptr(x0=log(ip), eval_f=dev, lb=fix_lower(lower, log(ip)), ub=fix_upper(upper, log(ip)), opts=opts, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta, corrected=corrected)
 	}
 	else{
         if(is.null(starting.vals)){
@@ -626,7 +626,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
            lower <- c(lower, log(lb))
            upper <- c(upper, log(ub))
         }
-		out = nloptr(x0=log(ip), eval_f=dev, lb=fix_lower(lower, log(ip)), ub=fix_upper(upper, log(ip)), opts=opts, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta)
+		out = nloptr(x0=log(ip), eval_f=dev, lb=fix_lower(lower, log(ip)), ub=fix_upper(upper, log(ip)), opts=opts, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta, corrected=corrected)
 	}
 	
     loglik <- -out$objective
@@ -678,7 +678,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 		theta[,2] <- 0
 	}else{
         if(algorithm == "invert"){
-            theta <- dev.theta(out$solution, index.mat, edges, tip.fog)
+            theta <- dev.theta(out$solution, index.mat, edges, tip.fog, corrected=corrected)
         }else{
             if(model == "BM1" | model == "BMS"){
                 max.pars <- max(index.mat)
@@ -690,7 +690,7 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 	#Calculates the Hessian for use in calculating standard errors and whether the maximum likelihood solution was found
 	if(diagn==TRUE){
 	  data[,1] <- tip.states.cp # fixes a cosmetic bug in cases where internal states don't match tip states
-		h <- hessian(x=log(out$solution), func=dev, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta)
+		h <- hessian(x=log(out$solution), func=dev, index.mat=index.mat, edges=edges, tip.fog=tip.fog, trendy=trendy, get.root.theta=get.root.theta, corrected=corrected)
 		#Using the corpcor package here to overcome possible NAs with calculating the SE
 		if(tip.fog=="estimate"){
             sigma.sq.me <- out$solution[length(out$solution)]

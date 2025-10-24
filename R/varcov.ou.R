@@ -147,7 +147,7 @@ create_enhanced_tree_structure <- function(phy) {
 		tip_label <- ifelse(tipward_treenode <= length(phy$tip.label), phy$tip.label[tipward_treenode], NA)
 		for (segment_index in sequence(length(phy$maps[[i]]))) {
 			# for each regime segment on this edge, we need a row
-			rootward_mapnode <- ifelse(segment_index == 1, 0, regime_index - 1)
+			rootward_mapnode <- ifelse(segment_index == 1, 0, segment_index - 1)
 			tipward_mapnode <- segment_index
 			segment_length <- phy$maps[[i]][segment_index]
 			tipward_height_segment <- rootward_height_segment + segment_length
