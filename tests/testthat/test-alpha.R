@@ -62,7 +62,8 @@ test_that("testing likelihood matches", {
 	cont_trait <- trait$X
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
-	tree <- phytools::make.simmap(tree, disc_trait)
+		
+	tree <- invisible(phytools::make.simmap(tree, disc_trait)) 
 
 	# OUMVA
 	alpha = c(0.5632459, 0.1726052)
@@ -104,7 +105,6 @@ test_that("testing likelihood matches", {
 
 test_that("testing vcv oumva", {
 	skip_on_cran()
-
 
 	tree <- structure(
 		list(
@@ -162,7 +162,8 @@ test_that("testing vcv oumva", {
 	cont_trait <- trait$X
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
-	tree <- phytools::make.simmap(tree, disc_trait)
+
+	tree <- invisible(phytools::make.simmap(tree, disc_trait))
 
 	# OUMVA
 	alpha = c(0.5632459, 0.1726052)
@@ -187,16 +188,15 @@ test_that("testing vcv oumva", {
 		theta = theta,
 		algorithm = "invert"
 	)
-	
+
 	lau_vcv <- vcv.matrix(tree, alpha, sigma.sq)
-	
+
 	root.edge.index <- which(tree$edge[, 1] == ape::Ntip(tree) + 1)
-	  
+
 	root.state <- which(
-		colnames(tree$mapped.edge) ==
-			names(tree$maps[[root.edge.index[2]]][1])
+		colnames(tree$mapped.edge) == names(tree$maps[[root.edge.index[2]]][1])
 	)
-	
+
 	ouwie_vcv <- OUwie:::varcov.ou.enhanced.tree(
 		phy = tree,
 		enhanced_tree = OUwie:::create_enhanced_tree_structure(tree),
@@ -204,15 +204,13 @@ test_that("testing vcv oumva", {
 		root.state = root.state,
 		root.age = NULL,
 		scaleHeight = FALSE
-	) 
-	
+	)
+
 	expect_equal(
 		lau_vcv,
 		ouwie_vcv,
 		tolerance = 1e-3
 	)
-
-
 })
 
 
@@ -276,7 +274,7 @@ test_that("testing vcv bm1", {
 	cont_trait <- trait$X
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
-	tree <- phytools::make.simmap(tree, disc_trait)
+	tree <- invisible(phytools::make.simmap(tree, disc_trait))
 
 	# BM1
 	alpha = rep(1e-8, 2)

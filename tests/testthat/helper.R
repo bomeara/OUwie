@@ -152,12 +152,17 @@
 	}
 
 	vcv.pairwise <- function(tree, alpha, sigma2, tip1, tip2) {
+		print(paste0("Calculating VCV for tips: ", tip1, ", ", tip2))
 		mrca_node <- ape::mrca(tree)[tip1, tip2]
 
 		cov_accum <- cov.accum(tree, mrca_node, alpha, sigma2)
+		print(paste0(" cov accum: ", cov_accum))
 		cov_loss1 <- cov.loss(tree, mrca_node, alpha, tip1)
+		print(paste0(" cov loss1: ", cov_loss1))
 		cov_loss2 <- cov.loss(tree, mrca_node, alpha, tip2)
+		print(paste0(" cov loss2: ", cov_loss2))
 		cov = cov_accum * exp(cov_loss1 + cov_loss2)
+		print(paste0(" final cov: ", cov))
 		return(unlist(unname(cov)))
 	}
 

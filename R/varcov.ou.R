@@ -221,19 +221,24 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 			if(col_index < row_index) {
 				next
 			}
-			
+			print(paste0("Computing VCV for pair: ", row_index, ", ", col_index))
 			# along each descendant path
 			
 			mrca_node <- mrca_cache[row_index, col_index]
 			
 			
 			left_sum <- traverse_down_for_vcv(enhanced_tree, row_index, mrca_node)
+			print(paste0(" left sum: ", left_sum))
 			right_sum <- traverse_down_for_vcv(enhanced_tree, col_index, mrca_node)
+			print(paste0(" right sum: ", right_sum))
 			exp_part <- exp(-(left_sum + right_sum))
+			print(paste0(" exp part: ", exp_part))
 			
 			# from mrca to root
 			stem_part <- traverse_to_root_from_mrca(enhanced_tree, mrca_node)
-			vcv[row_index, col_index] <- stem_part * exp_part			
+			print(paste0(" stem part: ", stem_part))
+			vcv[row_index, col_index] <- stem_part * exp_part		
+			print(paste0(" final vcv: ", vcv[row_index, col_index]))	
 		}
 	}
 	
@@ -273,6 +278,7 @@ traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 	}
 	current_row <- max(matching_rows)
 	while (!is.na(current_row)) {
+		print(paste0(" Starting root traversal at row: ", current_row))
 		running_sum <- running_sum +
 			enhanced_tree$sigma_squared[current_row] *
 				(exp(
@@ -286,6 +292,7 @@ traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 							enhanced_tree$rootward_height_segment[current_row]
 					)) /
 				(2 * enhanced_tree$alpha[current_row])
+		print(paste0("  Added segment contribution, new running sum: ", running_sum))
 		current_row <- enhanced_tree$parent_row[current_row]
 		if (is.na(current_row)) {
 			break
