@@ -2,7 +2,30 @@
  
 #written by Jeremy M. Beaulieu
 
-weight.mat<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=0.5){
+weight.mat <- function(phy, edges=NULL, Rate.mat=NULL, root.state=NULL, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=0.5, corrected=TRUE) {
+	if(corrected & simmap.tree) {
+		final_mat <- weight.matrix.lau(phy, Rate.mat[1,])
+		save(final_mat, file = "~/Downloads/weight_matrix_lau.RData")
+		return(final_mat)
+	} else {
+		final_mat <- weight.mat.original(
+			phy,
+			edges,
+			Rate.mat,
+			root.state,
+			simmap.tree,
+			root.age,
+			scaleHeight,
+			assume.station,
+			shift.point,
+			corrected=corrected
+		)
+		save(final_mat, file = "~/Downloads/weight_matrix_original.RData")
+		return(final_mat)
+	}
+}
+
+weight.mat.original<-function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=0.5){
     
     age.table <- MakeAgeTable(phy, root.age=root.age)
     Tmax <- max(age.table)

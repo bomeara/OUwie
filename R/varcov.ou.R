@@ -1,9 +1,10 @@
 varcov.ou <- function(phy, edges, Rate.mat, root.state, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=.5, corrected=TRUE, enhanced_tree=NULL) {
 	if(corrected & simmap.tree) {
-		if(is.null(enhanced_tree)) {
-			enhanced_tree <- create_enhanced_tree_structure(phy)
-		}
-		return(varcov.ou.enhanced.tree (phy, enhanced_tree, Rate.mat, root.state, root.age, scaleHeight))
+		# if(is.null(enhanced_tree)) {
+		# 	enhanced_tree <- create_enhanced_tree_structure(phy)
+		# }
+		# return(varcov.ou.enhanced.tree (phy, enhanced_tree, Rate.mat, root.state, root.age, scaleHeight))
+		return(vcv.matrix.lau(phy, Rate.mat[1,], Rate.mat[2,]))
 	} else {
 		return(varcov.ou.original(phy, edges, Rate.mat, root.state, simmap.tree, root.age, scaleHeight, assume.station, shift.point))
 	}
@@ -211,6 +212,9 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 	enhanced_tree$sigma_squared <- Rate.mat[2,as.numeric(enhanced_tree$regime)]
 	enhanced_tree$alpha_t <- enhanced_tree$alpha * enhanced_tree$segment_length
 	enhanced_tree$exp_2alpha_t <- exp(2 * enhanced_tree$alpha_t)
+	enhanced_tree$variance_piecewise <- enhanced_tree$sigma_squared * (1 - enhanced_tree$exp_2alpha_t) / (2 * enhanced_tree$alpha)
+	low_alpha <- which(enhanced_tree$alpha < 1e-8)
+	enhanced_tree$variance_piecewise[low_alpha] <- enhanced_tree$sigma_squared[low_alpha] * enhanced_tree$segment_length[low_alpha] # since it converges to BM variance
 	vcv <- matrix(0, ntax, ntax)
 	rownames(vcv) <- phy$tip.label
 	colnames(vcv) <- phy$tip.label
@@ -225,6 +229,7 @@ varcov.ou.enhanced.tree <- function(phy, enhanced_tree, Rate.mat, root.state, ro
 			# along each descendant path
 			
 			mrca_node <- mrca_cache[row_index, col_index]
+			
 			
 			
 			left_sum <- traverse_down_for_vcv(enhanced_tree, row_index, mrca_node)
@@ -277,24 +282,30 @@ traverse_to_root_from_mrca <- function(enhanced_tree, end_node) {
 		return(0)
 	}
 	current_row <- max(matching_rows)
-	while (!is.na(current_row)) {
+	previous_row <- enhanced_tree$parent_row[current_row]
+	while (!is.na(previous_row)) {
 		print(paste0(" Starting root traversal at row: ", current_row))
 		running_sum <- running_sum +
 			enhanced_tree$sigma_squared[current_row] *
 				(exp(
 					2 *
 						enhanced_tree$alpha[current_row] *
-						enhanced_tree$tipward_height_segment[current_row]
+						enhanced_tree$segment_length[current_row] 
 				) -
 					exp(
 						2 *
-							enhanced_tree$alpha[current_row] *
-							enhanced_tree$rootward_height_segment[current_row]
+							enhanced_tree$alpha[previous_row] *
+							enhanced_tree$segment_length[previous_row]
 					)) /
 				(2 * enhanced_tree$alpha[current_row])
-		print(paste0("  Added segment contribution, new running sum: ", running_sum))
+		print(paste0(
+			"  Added segment contribution, new running sum: ",
+			running_sum
+		))
 		current_row <- enhanced_tree$parent_row[current_row]
-		if (is.na(current_row)) {
+		previous_row <- enhanced_tree$parent_row[current_row]
+
+		if (is.na(previous_row)) {
 			break
 		}
 	}

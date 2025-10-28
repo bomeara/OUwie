@@ -1,5 +1,5 @@
 
-	### Code by Priscilla Lau et al. they supplied to demonstrate the issue
+	### Code by Priscilla Lau et al. they supplied to demonstrate the issue; slight tweaks by Brian O'Meara to handle zero alpha
 
 	#library(pracma)
 	#library(tidyverse)
@@ -35,6 +35,7 @@
 	}
 
 	weights.lineage <- function(tree, alpha, e) {
+		print(paste("Calculating weights for edge:", e))
 		root_node = length(tree$tip.label) + 1
 		lineage <- lineage.constructor(tree, root_node, e)
 		lineage[["alpha"]] = unlist(alpha[lineage[["state"]]])
@@ -72,7 +73,7 @@
 	}
 
 	# combine to form weight matrix
-	weight.matrix <- function(tree, alpha) {
+	weight.matrix.lau <- function(tree, alpha) {
 		ntip = length(tree$tip.label)
 		weight_matrix = matrix(0, nrow = ntip, ncol = length(alpha))
 		rownames(weight_matrix) <- tree$tip.label
@@ -108,7 +109,7 @@
 
 			if (length(subedge_lengths[[1]]) == 1) {
 				subedge_lengths = subedge_lengths |>
-					dplyr::mutate(cov = sigma2 / (2 * alpha) * exp1)
+					dplyr::mutate(cov = compute.piecewise.with.zero.possible(exp1, sigma2, alpha, time_span))
 				cov_accum = subedge_lengths$cov[[1]]
 			} else {
 				for (i in 2:length(subedge_lengths[[1]])) {
@@ -120,7 +121,7 @@
 					dplyr::mutate(exp3 = exp1 * exp(sum2)) |>
 					dplyr::group_by(state) |>
 					dplyr::summarise(
-						sum4 = sum(sigma2 / (2 * alpha) * exp3)
+						sum4 = sum(compute.piecewise.with.zero.possible(exp3, sigma2, alpha, time_span))
 					) |>
 					dplyr::reframe(sum_final = sum(sum4)) |>
 					unlist() |>
@@ -129,6 +130,16 @@
 		}
 		return(cov_accum)
 	}
+	
+	compute.piecewise.with.zero.possible <- function(exp_final, sigma2, alpha, time_span) {
+		cov_value <- sigma2 / (2 * alpha) * exp_final
+		baduns <- which(is.na(cov_value)) # occurs when alpha is zero, so we go to BM
+		if(length(baduns) > 0){
+			cov_value[baduns] <- sigma2[baduns] * time_span[baduns]
+		}
+		return(cov_value)
+	}
+		
 
 	cov.loss <- function(tree, mrca_node, alpha, tip) {
 		if (mrca_node == tip) {
@@ -161,7 +172,7 @@
 		return(unlist(unname(cov)))
 	}
 
-	vcv.matrix <- function(tree, alpha, sigma2) {
+	vcv.matrix.lau <- function(tree, alpha, sigma2) {
 		ntip <- length(tree$tip.label)
 		V <- matrix(nrow = ntip, ncol = ntip)
 		j = ntip

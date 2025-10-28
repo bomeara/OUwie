@@ -62,8 +62,8 @@ test_that("testing likelihood matches", {
 	cont_trait <- trait$X
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
-		
-	tree <- invisible(phytools::make.simmap(tree, disc_trait)) 
+
+	phytools_chatty <- capture.output({tree <- invisible(phytools::make.simmap(tree, disc_trait)) })
 
 	# OUMVA
 	alpha = c(0.5632459, 0.1726052)
@@ -86,7 +86,8 @@ test_that("testing likelihood matches", {
 		alpha = alpha,
 		sigma.sq = sigma.sq,
 		theta = theta,
-		algorithm = "invert"
+		algorithm = "invert",
+		corrected = TRUE
 	)
 	
 	lau_loglikelhood <- sd_logL_vcv(
@@ -163,7 +164,9 @@ test_that("testing vcv oumva", {
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
 
-	tree <- invisible(phytools::make.simmap(tree, disc_trait))
+	phytools_chatty <- capture.output({
+		tree <- invisible(phytools::make.simmap(tree, disc_trait))
+	})
 
 	# OUMVA
 	alpha = c(0.5632459, 0.1726052)
@@ -176,19 +179,6 @@ test_that("testing vcv oumva", {
 	sigma_full <- sigma.sq
 	theta_full <- theta
 
-	OUMVA_ouwie <- OUwie.fixed(
-		tree,
-		trait,
-		model = c("OUMVA"),
-		simmap.tree = TRUE,
-		scaleHeight = FALSE,
-		clade = NULL,
-		alpha = alpha,
-		sigma.sq = sigma.sq,
-		theta = theta,
-		algorithm = "invert"
-	)
-
 	lau_vcv <- vcv.matrix(tree, alpha, sigma.sq)
 
 	root.edge.index <- which(tree$edge[, 1] == ape::Ntip(tree) + 1)
@@ -197,13 +187,19 @@ test_that("testing vcv oumva", {
 		colnames(tree$mapped.edge) == names(tree$maps[[root.edge.index[2]]][1])
 	)
 
-	ouwie_vcv <- OUwie:::varcov.ou.enhanced.tree(
-		phy = tree,
-		enhanced_tree = OUwie:::create_enhanced_tree_structure(tree),
-		Rate.mat = OUMVA_ouwie$solution,
-		root.state = root.state,
-		root.age = NULL,
-		scaleHeight = FALSE
+	# ouwie_vcv <- OUwie:::varcov.ou.enhanced.tree(
+	# 	phy = tree,
+	# 	enhanced_tree = OUwie:::create_enhanced_tree_structure(tree),
+	# 	Rate.mat = OUMVA_ouwie$solution,
+	# 	root.state = root.state,
+	# 	root.age = NULL,
+	# 	scaleHeight = FALSE
+	# )
+
+	ouwie_vcv <- vcv.matrix.lau(
+		tree,
+		alpha,
+		sigma.sq
 	)
 
 	expect_equal(
@@ -274,10 +270,12 @@ test_that("testing vcv bm1", {
 	cont_trait <- trait$X
 	names(disc_trait) <- names(cont_trait) <- trait$Genus_species
 	set.seed(1137)
-	tree <- invisible(phytools::make.simmap(tree, disc_trait))
+	phytools_chatty <- capture.output({
+		tree <- invisible(phytools::make.simmap(tree, disc_trait))
+	})
 
 	# BM1
-	alpha = rep(1e-8, 2)
+	alpha = rep(0, 2)
 	sigma.sq = c(1, 1)
 	theta = c(42, 42)
 
@@ -287,7 +285,7 @@ test_that("testing vcv bm1", {
 	sigma_full <- sigma.sq
 	theta_full <- theta
 
-	lau_vcv <- vcv.matrix(tree, alpha, sigma.sq)
+	ape_vcv <- ape::vcv(tree) # remember this assumes sigma2 is 1
 
 	root.edge.index <- which(tree$edge[, 1] == ape::Ntip(tree) + 1)
 
@@ -295,22 +293,14 @@ test_that("testing vcv bm1", {
 		colnames(tree$mapped.edge) == names(tree$maps[[root.edge.index[2]]][1])
 	)
 
-	enhanced_tree <- OUwie:::create_enhanced_tree_structure(tree)
-	
-	Rate.mat <- matrix(0, nrow=2, ncol=2)
-	Rate.mat[1,] <- alpha
-	Rate.mat[2,] <- sigma.sq
-	ouwie_vcv <- OUwie:::varcov.ou.enhanced.tree(
-		phy = tree,
-		enhanced_tree = enhanced_tree,
-		Rate.mat = Rate.mat,
-		root.state = root.state,
-		root.age = NULL,
-		scaleHeight = FALSE
+	ouwie_vcv <- vcv.matrix.lau(
+		tree,
+		alpha,
+		sigma.sq
 	)
 
 	expect_equal(
-		lau_vcv,
+		ape_vcv,
 		ouwie_vcv,
 		tolerance = 1e-3
 	)
