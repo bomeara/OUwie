@@ -17,8 +17,7 @@ weight.mat <- function(phy, edges=NULL, Rate.mat=NULL, root.state=NULL, simmap.t
 			root.age,
 			scaleHeight,
 			assume.station,
-			shift.point,
-			corrected=corrected
+			shift.point
 		)
 		save(final_mat, file = "~/Downloads/weight_matrix_original.RData")
 		return(final_mat)

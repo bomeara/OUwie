@@ -25,6 +25,9 @@ hOUwie.dev <- function(p, phy, data, rate.cat, tip.fog,
   p.mk <- p[1:k]
   p.ou <- p[(k+1):length(p)] 
   Rate.mat <- matrix(1, 3, dim(index.disc)[2])
+  try({
+	  colnames(Rate.mat) <- colnames(phy$mapped.edge)
+  }, silent=TRUE)
   alpha.na <- is.na(index.cont[1,])
   index.cont[is.na(index.cont)] <- max(index.cont, na.rm = TRUE) + 1
   Rate.mat[] <- c(p.ou, 1e-10)[index.cont]
@@ -229,6 +232,9 @@ hOUwie.fixed.dev <- function(p, simmaps, data, rate.cat, tip.fog,
   p.mk <- p[1:k]
   p.ou <- p[(k+1):length(p)] 
   Rate.mat <- matrix(1, 3, dim(index.disc)[2])
+  try({
+	  colnames(Rate.mat) <- colnames(simmaps[[1]]$mapped.edge)
+  }, silent=TRUE)
   alpha.na <- is.na(index.cont[1,])
   index.cont[is.na(index.cont)] <- max(index.cont, na.rm = TRUE) + 1
   Rate.mat[] <- c(p.ou, 1e-10)[index.cont]
@@ -555,21 +561,24 @@ getMapFromSubstHistory <- function(maps, phy){
   
 }
 # a basic optimization for OUwie basic
-OUwie.basic.dev <- function(p, phy, data, tip.fog, index.cont, tip.paths=NULL){
+OUwie.basic.dev <- function(p, phy, data, tip.fog, index.cont, tip.paths=NULL, corrected){
   p <- exp(p)
   index.cont[is.na(index.cont)] <- max(index.cont, na.rm = TRUE) + 1
   Rate.mat <- matrix(1, 3, dim(index.cont)[2])
+  try({
+	  colnames(Rate.mat) <- colnames(phy$mapped.edge)
+  }, silent=TRUE)
   Rate.mat[] <- c(p, 1e-10)[index.cont]
   alpha = Rate.mat[1,]
   sigma.sq = Rate.mat[2,]
   theta = Rate.mat[3,]
-  llik_continuous <- OUwie.basic(phy, data, simmap.tree=TRUE, scaleHeight=FALSE, alpha=alpha, sigma.sq=sigma.sq, theta=theta, algorithm="three.point", tip.paths=tip.paths, tip.fog=tip.fog)
+  llik_continuous <- OUwie.basic(phy, data, simmap.tree=TRUE, scaleHeight=FALSE, alpha=alpha, sigma.sq=sigma.sq, theta=theta, algorithm="three.point", tip.paths=tip.paths, tip.fog=tip.fog, corrected=corrected)
   return(-llik_continuous)
 }
 
 
 # probability of the continuous parameter
-OUwie.basic<-function(phy, data, simmap.tree=TRUE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, alpha, sigma.sq, theta, tip.fog="none", algorithm="three.point", tip.paths=NULL, return.expected.vals=FALSE){
+OUwie.basic<-function(phy, data, simmap.tree=TRUE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, alpha, sigma.sq, theta, tip.fog="none", algorithm="three.point", tip.paths=NULL, return.expected.vals=FALSE, corrected=TRUE){
   # organize tip states based on what the simmap suggests
   mapping <- unlist(lapply(phy$maps, function(x) names(x[length(x)])))
   nTip <- length(phy$tip.label)
@@ -641,11 +650,12 @@ OUwie.basic<-function(phy, data, simmap.tree=TRUE, root.age=NULL, scaleHeight=FA
     Rate.mat <- Rate.mat[,as.numeric(colnames(phy$mapped.edge))]
     pars <- pars[as.numeric(colnames(phy$mapped.edge)), ]
   }
+  colnames(Rate.mat) <- colnames(phy$mapped.edge)
   
   if(get.root.theta == TRUE){
-    W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=FALSE, shift.point=shift.point)
+    W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=FALSE, shift.point=shift.point, corrected=corrected)
   }else{
-    W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point)
+    W <- weight.mat(phy, edges, Rate.mat, root.state=root.state, simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, assume.station=TRUE, shift.point=shift.point, corrected=corrected)
   }
   
   #Likelihood function for estimating model parameters

@@ -279,6 +279,10 @@ OUwie.fixed<-function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","
             param.count <- np + k
         }
     }
+	
+	try({
+		colnames(Rate.mat) <- colnames(phy$mapped.edge)
+	}, silent=TRUE)
     
     if(scaleHeight==TRUE){
         phy$edge.length <- phy$edge.length/Tmax

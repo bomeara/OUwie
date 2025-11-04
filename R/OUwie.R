@@ -223,6 +223,10 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
         }else{
             Rate.mat <- matrix(1, 2, k)
         }
+		
+		try({
+			colnames(Rate.mat) <- colnames(phy$mapped.edge)
+		}, silent=TRUE)
 		if (model == "BM1"){
 			np <- 1
             index.mat[1,1:k] <- NA

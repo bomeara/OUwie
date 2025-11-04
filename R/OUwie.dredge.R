@@ -406,6 +406,9 @@ DredgeCombinations <- function(shifts, alpha.max.k, sigma.sq.max.k, start.vals){
 GetThetas <- function(p, phy, data, simmap.tree, root.age, scaleHeight, root.station, shift.point, index.mat=index.mat, tip.fog=tip.fog){
     p.new <- exp(p)
     Rate.mat <- index.mat
+	try ({
+		colnames(Rate.mat) <- colnames(phy$mapped.edge)
+	}, silent=TRUE)
     Rate.mat[] <- c(p.new, 1e-10)[index.mat]
     tmp <- NA
     try(tmp <- OUwie.fixed(phy=phy, data=data, model=c("OUM"), simmap.tree=simmap.tree, root.age=root.age, scaleHeight=scaleHeight, root.station=root.station, shift.point=shift.point, alpha=Rate.mat[1,], sigma.sq=Rate.mat[2,], theta=NULL, tip.fog=tip.fog, check.identify=FALSE, algorithm="invert", quiet=TRUE), silent=TRUE)
@@ -423,6 +426,9 @@ GetThetas <- function(p, phy, data, simmap.tree, root.age, scaleHeight, root.sta
 GetLikelihood <- function(p, phy, data, simmap.tree, root.age, scaleHeight, root.station, shift.point, index.mat=index.mat, tip.fog=tip.fog, algorithm=algorithm){
     p.new <- exp(p)
     Rate.mat <- index.mat
+	try ({
+		colnames(Rate.mat) <- colnames(phy$mapped.edge)
+	}, silent=TRUE)
     Rate.mat[] <- c(p.new, 1e-10)[index.mat]
     tmp <- NA
     if(algorithm == "invert"){
