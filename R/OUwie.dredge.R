@@ -1,6 +1,11 @@
 
 
 OUwie.dredge <- function(phy, data, criterion=c("AIC", "AICc", "BIC", "mBIC"), shift.max=3, sigma.sq.max.k=3, alpha.max.k=3, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, shift.point=0.5, tip.fog="none", algorithm=c("invert", "three.point"), lb=NULL, ub=NULL, opts = list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000", "ftol_rel"=.Machine$double.eps^0.5), verbose=FALSE) {
+	
+	if (!simmap.tree) {
+		phy <- node_label_tree_to_simmap_tree(phy, data, shift.point)
+		simmap.tree <- TRUE
+	}
     
     ### ADD WARNINGS ###
     ## Number of alpha or sigma pars cannot exceed 1+max shifts

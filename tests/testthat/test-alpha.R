@@ -90,6 +90,20 @@ test_that("testing likelihood matches", {
 		corrected = TRUE
 	)
 	
+	OUMVA_ouwie_uncorrected <- OUwie.fixed(
+		tree,
+		trait,
+		model = c("OUMVA"),
+		simmap.tree = TRUE,
+		scaleHeight = FALSE,
+		clade = NULL,
+		alpha = alpha,
+		sigma.sq = sigma.sq,
+		theta = theta,
+		algorithm = "invert",
+		corrected = FALSE
+	)
+	
 	lau_loglikelhood <- sd_logL_vcv(
 		tree,
 		cont_trait,
@@ -101,6 +115,7 @@ test_that("testing likelihood matches", {
 	
 
 	expect_equal(lau_loglikelhood, OUMVA_ouwie$loglik[1,1], tolerance=1e-3)
+	expect_true(!isTRUE(all.equal(target=lau_loglikelhood, current=OUMVA_ouwie_uncorrected$loglik[1,1], tolerance=1e-3)))
 })
 
 

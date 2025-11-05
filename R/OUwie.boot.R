@@ -4,6 +4,11 @@
 
 OUwie.boot <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), nboot=100, alpha, sigma.sq, theta, theta0, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none", algorithm=c("invert", "three.point"), diagn=FALSE, quiet=TRUE, warn=FALSE){
 	
+	if (!simmap.tree) {
+		phy <- node_label_tree_to_simmap_tree(phy, data, shift.point)
+		simmap.tree <- TRUE
+	}
+	
     if(length(algorithm) == 2){
         algorithm = "invert"
         warning("An algorithm was not specified. Defaulting to computing the determinant and inversion of the vcv.", call.=FALSE, immediate.=TRUE)

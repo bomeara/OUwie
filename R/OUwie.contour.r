@@ -18,6 +18,11 @@ contourSearchPoints <- function(variables, lower, upper, nreps){
 
 
 OUwie.semifixed <- function(p, phy, data, num.regimes, index.vector, fixed.pars, simmap.tree, scaleHeight, root.station, get.root.theta, shift.point, algorithm){
+	
+	if (!simmap.tree) {
+		phy <- node_label_tree_to_simmap_tree(phy, data, shift.point)
+		simmap.tree <- TRUE
+	}
     
     new.p <- exp(p)
     

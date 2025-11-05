@@ -19,53 +19,90 @@
 
 OUwie.sim <- function(phy=NULL, data=NULL, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, alpha=NULL, sigma.sq=NULL, theta0=NULL, theta=NULL, tip.fog="none", shift.point=0.5, fitted.object=NULL, get.all=FALSE){
 	tip.fog_vector <- NA
-    if(!is.null(fitted.object)) {
-        if(grepl("BM", fitted.object$model) | grepl("OU1", fitted.object$model)) {
-            stop(paste("not implemented yet for ", fitted.object$model))
-        }
-        if(!is.null(alpha) | !is.null(theta0) | !is.null(theta)) {
-            stop("You're passing in parameters to simulate from AND a fitted object to simulate under. You can do one or the other")
-        }
-        phy <- fitted.object$phy
-        data <- cbind(phy$tip.label, fitted.object$data)
-        alpha <- fitted.object$solution['alpha',]
-        alpha[which(is.na(alpha))] <- 0
-        sigma.sq <- fitted.object$solution['sigma.sq',]
-        
-		phy <- reorder.phylo(phy, "cladewise")
-        
-		if(tip.fog != "none"){
-            warning("Tip fog is not yet handled for simulations from fitted.object")
-        }
-        
-        if (fitted.object$root.station == TRUE | fitted.object$root.station==FALSE){
-            if (fitted.object$model == "OU1"){
-                theta <- matrix(t(fitted.object$theta[1,]), 2, length(levels(fitted.object$tot.states)))[1,]
-                theta0 <- theta[phy$node.label[1]]
-            }
-        }
-        if (fitted.object$root.station == TRUE | !grepl("OU", fitted.object$model)){ # BM1 or BMS as well
-            if (fitted.object$model != "OU1"){
-                theta <- matrix(t(fitted.object$theta), 2, length(levels(fitted.object$tot.states)))[1,]
-                theta0 <- theta[phy$node.label[1]]
-            }
-        }
-        if (fitted.object$root.station == FALSE & grepl("OU", fitted.object$model)){
-            if (fitted.object$model != "OU1"){
-                if(fitted.object$get.root.theta == TRUE){
-                    theta.all <- matrix(t(fitted.object$theta), 2, 1:length(levels(fitted.object$tot.states))+1)[1,]
-                    theta <- theta.all[2:length(theta.all)]
-                    theta0 <- theta.all[1]
-                }else{
-                    int.states <- factor(phy$node.label)
-                    phy.tmp <- phy
-                    phy.tmp$node.label <- as.numeric(int.states)
-                    theta <- matrix(t(fitted.object$theta), 2, length(levels(fitted.object$tot.states)))[1,]
-                    theta0 <- theta[phy.tmp$node.label[1]]
-                }
-            }
-        }
-    }
+    if (!is.null(fitted.object)) {
+					if (
+						grepl("BM", fitted.object$model) |
+							grepl("OU1", fitted.object$model)
+					) {
+						stop(paste(
+							"not implemented yet for ",
+							fitted.object$model
+						))
+					}
+					if (!is.null(alpha) | !is.null(theta0) | !is.null(theta)) {
+						stop(
+							"You're passing in parameters to simulate from AND a fitted object to simulate under. You can do one or the other"
+						)
+					}
+					phy <- fitted.object$phy
+					data <- cbind(phy$tip.label, fitted.object$data)
+					alpha <- fitted.object$solution['alpha', ]
+					alpha[which(is.na(alpha))] <- 0
+					sigma.sq <- fitted.object$solution['sigma.sq', ]
+
+					#phy <- reorder.phylo(phy, "cladewise") # BCO removing this as reordering does not work for simmap trees
+
+					if (tip.fog != "none") {
+						warning(
+							"Tip fog is not yet handled for simulations from fitted.object"
+						)
+					}
+
+					if (
+						fitted.object$root.station == TRUE |
+							fitted.object$root.station == FALSE
+					) {
+						if (fitted.object$model == "OU1") {
+							theta <- matrix(
+								t(fitted.object$theta[1, ]),
+								2,
+								length(levels(fitted.object$tot.states))
+							)[1, ]
+							theta0 <- theta[phy$node.label[1]]
+						}
+					}
+					if (
+						fitted.object$root.station == TRUE |
+							!grepl("OU", fitted.object$model)
+					) {
+						# BM1 or BMS as well
+						if (fitted.object$model != "OU1") {
+							theta <- matrix(
+								t(fitted.object$theta),
+								2,
+								length(levels(fitted.object$tot.states))
+							)[1, ]
+							theta0 <- theta[phy$node.label[1]]
+						}
+					}
+					if (
+						fitted.object$root.station == FALSE &
+							grepl("OU", fitted.object$model)
+					) {
+						if (fitted.object$model != "OU1") {
+							if (fitted.object$get.root.theta == TRUE) {
+								theta.all <- matrix(
+									t(fitted.object$theta),
+									2,
+									1:length(levels(fitted.object$tot.states)) +
+										1
+								)[1, ]
+								theta <- theta.all[2:length(theta.all)]
+								theta0 <- theta.all[1]
+							} else {
+								int.states <- factor(phy$node.label)
+								phy.tmp <- phy
+								phy.tmp$node.label <- as.numeric(int.states)
+								theta <- matrix(
+									t(fitted.object$theta),
+									2,
+									length(levels(fitted.object$tot.states))
+								)[1, ]
+								theta0 <- theta[phy.tmp$node.label[1]]
+							}
+						}
+					}
+				}
 
     if(is.null(root.age)){
         if(any(branching.times(phy)<0)){
