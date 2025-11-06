@@ -8,7 +8,7 @@ OUwie(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA",
 root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none",
 starting.vals=NULL, check.identify=TRUE, algorithm=c("invert", "three.point"),
 diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list(algorithm = 
-"NLOPT_LN_SBPLX", maxeval = "1000", ftol_rel = .Machine$double.eps^0.5), corrected=TRUE)
+"NLOPT_LN_SBPLX", maxeval = "1000", ftol_rel = .Machine$double.eps^0.5), corrected="auto")
 }
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format and with internal nodes labeled denoting the ancestral selective regimes.}
@@ -19,7 +19,7 @@ diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list(algorithm
 \item{scaleHeight}{a logical indicating whether the total tree height should be scaled to 1 (see Details). The default is \code{FALSE}.}
 \item{root.station}{a logical indicating whether to assume a random starting point (TRUE) or a fixed starting point (FALSE) (see Details).}
 \item{get.root.theta}{a logical indicating whether the starting state, \eqn{\theta_0}{theta_0}, should be estimated (see Details).}
-\item{shift.point}{the point along a branch where a regime change is assumed to have occurred (if \code{SIMMAP=FALSE}. The default is set to 0.5, or halfway along a branch.}
+\item{shift.point}{the point along a branch where a regime change is assumed to have occurred (if \code{SIMMAP=FALSE}). The default is set to 0.5, or halfway along a branch.}
 \item{clade}{a list containing a pair of taxa whose MRCA is the clade of interest (see Details).}
 \item{tip.fog}{designates whether a fourth column in the data matrix contains within species variation for each species value ("known"). The tip fog is assumed to be the standard error of the species mean. The default is "none", but can be estimated by setting the option to "estimate".}
 \item{starting.vals}{a vector of initial values for the optimization search. For OU models, two must be supplied, with the first being the initial alpha value and the second being the initial sigma squared. For BM models, just a single value is needed.}
@@ -28,17 +28,15 @@ diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list(algorithm
 \item{diagn}{a logical indicating whether the full diagnostic analysis should be carried out. The default is \code{FALSE}.}
 \item{quiet}{a logical indicating whether progress should be written to the screen. The default is \code{FALSE}.}
 \item{warn}{a logical indicating whether a warning should be printed if the number of parameters exceeds ntips/10. The default is \code{TRUE}.}
-\item{lb}{if algorithm == "invert" a single value indicating the lower bound for the parameter values. if algorithm == "three.point", a vector of length 3 with position 1 as alpha lower bound, position 2 as sigma.sq's lower bound, position 3 as theta's lower bound. when set to NULL it will be a default value of 1e-9. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.}
-\item{ub}{if algorithm == "invert" a single value indicating the upper bound for the parameter values. if algorithm == "three.point", a vector of length 3 with position 1 as alpha upper bound, position 2 as sigma.sq's upper bound, position 3 as theta's upper bound. when set to NULL it will be a default value of 100. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.}
+\item{lb}{if algorithm == "invert" a single value indicating the lower bound for the parameter values (or a vector with one lower bound per parameter). if algorithm == "three.point", a vector of length 3 with position 1 as alpha lower bound, position 2 as sigma.sq's lower bound, position 3 as theta's lower bound. when set to NULL it will be a default value of 1e-9. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.}
+\item{ub}{if algorithm == "invert" a single value indicating the upper bound for the parameter values (or a vector with one lower bound per parameter). if algorithm == "three.point", a vector of length 3 with position 1 as alpha upper bound, position 2 as sigma.sq's upper bound, position 3 as theta's upper bound. when set to NULL it will be a default value of 100. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.}
 \item{opts}{a list of options to pass to nloptr for the optimization: useful to adjust for faster, coarser searches}
-\item{corrected}{a logical indicating whether to use the correct calculation for the variance-covariance matrix.}
+\item{corrected}{by default, "auto" to automatically use the slower corrected code for models with varying alpha and faster code for other models; TRUE to always use the correction and FALSE to never use it}
 }
 \details{
 This function fits various likelihood models for continuous characters evolving under discrete selective regimes. The function returns parameter estimates and their approximate standard errors. The R package \code{nloptr} provides a common interface to NLopt, an open-source library for nonlinear optimization. The likelihood function is maximized using the bounded subplex optimization routine (\code{NLOPT_LN_SBPLX}). As input all \code{OUwie} requires is a tree and a trait data.frame. The tree must be of class \dQuote{phylo} and must contain the ancestral selective regimes as internal node labels. Internal node labels can be applied manually or from some sort of ancestral state reconstruction procedure (BayesTraits, \code{ape}, \code{diversitree}, SIMMAP, etc.), which would then be brought into OUwie. This is essentially what is required by \code{ouch} and Brownie (though Brownie provides built-in ancestral state reconstruction capabilities). The trait data.frame must have column entries in the following order: [,1] species names, [,2] current selective regime, and [,3] the continuous trait of interest. Alternatively, if the user wants to incorporate tip.fog (\code{tip.fog}="known"), then a fourth column, [,4] must be included that provides the standard error estimates for each species mean. However, a global tip.fog for all taxa can be estimated from the data (\code{tip.fog}="estimate"). Also, a user can specify a particular clade as being in a different selective regime, by specifying a pair of species whose mrca is the root of the clade of interest [e.g., \code{clade}=c("taxaA","taxaB")]. OUwie will automatically assign internal node labels and update the data matrix according to this clade designation.
 
 Possible models are as follows: single-rate Brownian motion (\code{model=BM1}), Brownian motion with different rate parameters for each state on a tree (\code{model=BMS}), Ornstein-Uhlenbeck model with a single optimum for all species (\code{model=OU1}), Ornstein-Uhlenbeck model with different state means and a single \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} acting all selective regimes (\code{model=OUM}), and new Ornstein-Uhlenbeck models that assume different state means as well as either multiple \eqn{\sigma^2}{sigma^2} (\code{model=OUMV}), multiple \eqn{\alpha}{alpha} (\code{model=OUMA}), or multiple \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} per selective regime (\code{model=OUMVA}).
-
-Note (Sept. 4): From feedback from a user, we have concerns about the likelihood function  for the OUMA and OUMVA models. As of Sept. 4, 2025, we recommend not using these models for now, but we expect the situation to be resolved soon (either with corrected likelihood functions or a definite proof that they are ok as is). That said, we leave these as options for reproducibility and debugging. If you do use them, be sure to note the package version and report this in your work.
 
 By default, we drop the root optima and absorb the weight into whatever regime the root is in. In previous version we used to incorrectly refer to this as "stationarity". True stationarity assumes that the starting state comes from a distribution, and the covariance requires an additional variance term to account for the fact that, up until T=0, the lineage is assumed to have been evolving in the ancestral regime. We have added this in for the OU1 and OUM models only (root.station=TRUE).
 
@@ -136,5 +134,5 @@ Ho, L.S.T., and C. Ane. 2014. Intrinsic inference difficulties for trait evoluti
 
 Thomas G.H., Freckleton R.P., and Szekely T. 2006. Comparative analysis of the influence of developmental mode on phenotypic diversification rates in shorebirds. Proceedings of the Royal Society, B. 273:1619-1624.
 }
-\author{Jeremy M. Beaulieu and Brian C. O'Meara}
+\author{Jeremy M. Beaulieu and Brian C. O'Meara, with contributions from Priscilla Lau, Bjørn Kopperud, and Sebastian Höhna}
 \keyword{models}

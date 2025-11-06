@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">OUwie</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.16</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.18</span>
       </span>
     </div>
 
@@ -32,6 +32,9 @@
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu"><li>
+      <a href="../articles/calculationUpdate.html">Calculation Update</a>
+    </li>
+    <li>
       <a href="../articles/hOUwieStarterGuide.html">hOUwie User Guide</a>
     </li>
     <li>
@@ -68,7 +71,7 @@
 <span>root.station<span class="op">=</span><span class="cn">FALSE</span>, get.root.theta<span class="op">=</span><span class="cn">FALSE</span>, shift.point<span class="op">=</span><span class="fl">0.5</span>, clade<span class="op">=</span><span class="cn">NULL</span>, tip.fog<span class="op">=</span><span class="st">"none"</span>,</span>
 <span>starting.vals<span class="op">=</span><span class="cn">NULL</span>, check.identify<span class="op">=</span><span class="cn">TRUE</span>, algorithm<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"invert"</span>, <span class="st">"three.point"</span><span class="op">)</span>,</span>
 <span>diagn<span class="op">=</span><span class="cn">FALSE</span>, quiet<span class="op">=</span><span class="cn">FALSE</span>, warn<span class="op">=</span><span class="cn">TRUE</span>, lb <span class="op">=</span> <span class="cn">NULL</span>, ub <span class="op">=</span> <span class="cn">NULL</span>, opts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>algorithm <span class="op">=</span> </span>
-<span><span class="st">"NLOPT_LN_SBPLX"</span>, maxeval <span class="op">=</span> <span class="st">"1000"</span>, ftol_rel <span class="op">=</span> <span class="va">.Machine</span><span class="op">$</span><span class="va">double.eps</span><span class="op">^</span><span class="fl">0.5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="st">"NLOPT_LN_SBPLX"</span>, maxeval <span class="op">=</span> <span class="st">"1000"</span>, ftol_rel <span class="op">=</span> <span class="va">.Machine</span><span class="op">$</span><span class="va">double.eps</span><span class="op">^</span><span class="fl">0.5</span><span class="op">)</span>, corrected<span class="op">=</span><span class="st">"auto"</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -100,7 +103,7 @@
 <dd><p>a logical indicating whether the starting state, \(\theta_0\), should be estimated (see Details).</p></dd>
 
 <dt id="arg-shift-point">shift.point<a class="anchor" aria-label="anchor" href="#arg-shift-point"></a></dt>
-<dd><p>the point along a branch where a regime change is assumed to have occurred (if <code>SIMMAP=FALSE</code>. The default is set to 0.5, or halfway along a branch.</p></dd>
+<dd><p>the point along a branch where a regime change is assumed to have occurred (if <code>SIMMAP=FALSE</code>). The default is set to 0.5, or halfway along a branch.</p></dd>
 
 <dt id="arg-clade">clade<a class="anchor" aria-label="anchor" href="#arg-clade"></a></dt>
 <dd><p>a list containing a pair of taxa whose MRCA is the clade of interest (see Details).</p></dd>
@@ -127,20 +130,22 @@
 <dd><p>a logical indicating whether a warning should be printed if the number of parameters exceeds ntips/10. The default is <code>TRUE</code>.</p></dd>
 
 <dt id="arg-lb">lb<a class="anchor" aria-label="anchor" href="#arg-lb"></a></dt>
-<dd><p>if algorithm == "invert" a single value indicating the lower bound for the parameter values. if algorithm == "three.point", a vector of length 3 with position 1 as alpha lower bound, position 2 as sigma.sq's lower bound, position 3 as theta's lower bound. when set to NULL it will be a default value of 1e-9. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.</p></dd>
+<dd><p>if algorithm == "invert" a single value indicating the lower bound for the parameter values (or a vector with one lower bound per parameter). if algorithm == "three.point", a vector of length 3 with position 1 as alpha lower bound, position 2 as sigma.sq's lower bound, position 3 as theta's lower bound. when set to NULL it will be a default value of 1e-9. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.</p></dd>
 
 <dt id="arg-ub">ub<a class="anchor" aria-label="anchor" href="#arg-ub"></a></dt>
-<dd><p>if algorithm == "invert" a single value indicating the upper bound for the parameter values. if algorithm == "three.point", a vector of length 3 with position 1 as alpha upper bound, position 2 as sigma.sq's upper bound, position 3 as theta's upper bound. when set to NULL it will be a default value of 100. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.</p></dd>
+<dd><p>if algorithm == "invert" a single value indicating the upper bound for the parameter values (or a vector with one lower bound per parameter). if algorithm == "three.point", a vector of length 3 with position 1 as alpha upper bound, position 2 as sigma.sq's upper bound, position 3 as theta's upper bound. when set to NULL it will be a default value of 100. Note that even if the model you're using doesn't include alpha (e.g. BM1), it must be included in this vector, but it will not be used to set any bounds.</p></dd>
 
 <dt id="arg-opts">opts<a class="anchor" aria-label="anchor" href="#arg-opts"></a></dt>
 <dd><p>a list of options to pass to nloptr for the optimization: useful to adjust for faster, coarser searches</p></dd>
+
+<dt id="arg-corrected">corrected<a class="anchor" aria-label="anchor" href="#arg-corrected"></a></dt>
+<dd><p>by default, "auto" to automatically use the slower corrected code for models with varying alpha and faster code for other models; TRUE to always use the correction and FALSE to never use it</p></dd>
 
 </dl></div>
     <div id="details">
     <h2>Details</h2>
     <p>This function fits various likelihood models for continuous characters evolving under discrete selective regimes. The function returns parameter estimates and their approximate standard errors. The R package <code>nloptr</code> provides a common interface to NLopt, an open-source library for nonlinear optimization. The likelihood function is maximized using the bounded subplex optimization routine (<code>NLOPT_LN_SBPLX</code>). As input all <code>OUwie</code> requires is a tree and a trait data.frame. The tree must be of class “phylo” and must contain the ancestral selective regimes as internal node labels. Internal node labels can be applied manually or from some sort of ancestral state reconstruction procedure (BayesTraits, <code>ape</code>, <code>diversitree</code>, SIMMAP, etc.), which would then be brought into OUwie. This is essentially what is required by <code>ouch</code> and Brownie (though Brownie provides built-in ancestral state reconstruction capabilities). The trait data.frame must have column entries in the following order: [,1] species names, [,2] current selective regime, and [,3] the continuous trait of interest. Alternatively, if the user wants to incorporate tip.fog (<code>tip.fog</code>="known"), then a fourth column, [,4] must be included that provides the standard error estimates for each species mean. However, a global tip.fog for all taxa can be estimated from the data (<code>tip.fog</code>="estimate"). Also, a user can specify a particular clade as being in a different selective regime, by specifying a pair of species whose mrca is the root of the clade of interest [e.g., <code>clade</code>=c("taxaA","taxaB")]. OUwie will automatically assign internal node labels and update the data matrix according to this clade designation.</p>
 <p>Possible models are as follows: single-rate Brownian motion (<code>model=BM1</code>), Brownian motion with different rate parameters for each state on a tree (<code>model=BMS</code>), Ornstein-Uhlenbeck model with a single optimum for all species (<code>model=OU1</code>), Ornstein-Uhlenbeck model with different state means and a single \(\alpha\) and \(\sigma^2\) acting all selective regimes (<code>model=OUM</code>), and new Ornstein-Uhlenbeck models that assume different state means as well as either multiple \(\sigma^2\) (<code>model=OUMV</code>), multiple \(\alpha\) (<code>model=OUMA</code>), or multiple \(\alpha\) and \(\sigma^2\) per selective regime (<code>model=OUMVA</code>).</p>
-<p>Note (Sept. 4): From feedback from a user, we have concerns about the likelihood function  for the OUMA and OUMVA models. As of Sept. 4, 2025, we recommend not using these models for now, but we expect the situation to be resolved soon (either with corrected likelihood functions or a definite proof that they are ok as is). That said, we leave these as options for reproducibility and debugging. If you do use them, be sure to note the package version and report this in your work.</p>
 <p>By default, we drop the root optima and absorb the weight into whatever regime the root is in. In previous version we used to incorrectly refer to this as "stationarity". True stationarity assumes that the starting state comes from a distribution, and the covariance requires an additional variance term to account for the fact that, up until T=0, the lineage is assumed to have been evolving in the ancestral regime. We have added this in for the OU1 and OUM models only (root.station=TRUE).</p>
 <p>Note, too, that when specifying the BMS model also be mindful of the root.station flag. When root.station=FALSE, the non-censored model of O'Meara et al. 2006 is invoked (i.e., a single regime at the root is estimated), and when root.station==TRUE the group mean model of Thomas et al. 2006 (i.e., the number of means equals the number of regimes). The latter case appears to be a strange special case of OU, in that it behaves similarly to the OUMV model, but without selection. I would say that this is more consistent with the censored test of O'Meara et al. (2006), as opposed to having any real connection to OU. In any case, more work is clearly needed to understand the behavior of the group means model, and therefore, I recommend setting root.station=FALSE in the BMS case.</p>
 <p>The Hessian matrix is used as a means to estimate the approximate standard errors of the model parameters and to assess whether they are the maximum likelihood estimates. The variance-covariance matrix of the estimated values of \(\alpha\) and \(\sigma^2\) are computed as the inverse of the Hessian matrix and the standard errors are the square roots of the diagonals of this matrix. The Hessian is a matrix of second-order derivatives and is approximated in the R package <code>numDeriv</code>. So, if changes in the value of a parameter results in sharp changes in the slope around the maximum of the log-likelihood function, the second-order derivative will be large, the standard error will be small, and the parameter estimate is considered stable. On the other hand, if the second-order derivative is nearly zero, then the change in the slope around the maximum is also nearly zero, indicating that the parameter value can be moved in any direction without greatly affecting the log-likelihood. In such situations, the standard error of the parameter will be large.</p>
@@ -250,7 +255,7 @@
     </div>
     <div id="author">
     <h2>Author</h2>
-    <p>Jeremy M. Beaulieu and Brian C. O'Meara</p>
+    <p>Jeremy M. Beaulieu and Brian C. O'Meara, with contributions from Priscilla Lau, Bjørn Kopperud, and Sebastian Höhna</p>
     </div>
 
     <div id="ref-examples">
@@ -312,7 +317,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
       </footer></div>

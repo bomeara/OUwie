@@ -1,7 +1,8 @@
 pandoc: 3.6.4
-pkgdown: 2.1.1
+pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
+  calculationUpdate: calculationUpdate.html
   hOUwieStarterGuide: hOUwieStarterGuide.html
   OUwie_2.1_adds: OUwie_2.1_adds.html
-last_built: 2025-09-17T18:33Z
+last_built: 2025-11-06T22:12Z

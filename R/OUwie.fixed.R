@@ -4,11 +4,19 @@
 
 #Allows the user to calculate the likelihood given a specified set of parameter values.
 
-OUwie.fixed<-function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, tip.fog="none", check.identify=TRUE, algorithm=c("invert", "three.point"), tip.paths=NULL, quiet=FALSE, corrected=TRUE){
+OUwie.fixed<-function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, alpha=NULL, sigma.sq=NULL, theta=NULL, clade=NULL, tip.fog="none", check.identify=TRUE, algorithm=c("invert", "three.point"), tip.paths=NULL, quiet=FALSE, corrected="auto"){
 	
 	if (!simmap.tree) {
 		phy <- node_label_tree_to_simmap_tree(phy, data, shift.point)
 		simmap.tree <- TRUE
+	}
+	
+	if (corrected == "auto") {
+		if (grepl("A", model)) {
+			corrected <- TRUE
+		} else {
+			corrected <- FALSE
+		}
 	}
     
     if(length(algorithm) == 2){

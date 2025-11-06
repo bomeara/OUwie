@@ -5,7 +5,6 @@
 weight.mat <- function(phy, edges=NULL, Rate.mat=NULL, root.state=NULL, simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, assume.station=TRUE, shift.point=0.5, corrected=TRUE) {
 	if(corrected & simmap.tree) {
 		final_mat <- weight.matrix.lau(phy, Rate.mat[1,])
-		save(final_mat, file = "~/Downloads/weight_matrix_lau.RData")
 		return(final_mat)
 	} else {
 		final_mat <- weight.mat.original(
@@ -19,7 +18,6 @@ weight.mat <- function(phy, edges=NULL, Rate.mat=NULL, root.state=NULL, simmap.t
 			assume.station,
 			shift.point
 		)
-		save(final_mat, file = "~/Downloads/weight_matrix_original.RData")
 		return(final_mat)
 	}
 }

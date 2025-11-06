@@ -34,8 +34,44 @@
 		return(tibble::tibble(state = state_changes, time_span = subedge_lengths))
 	}
 
+	# Original using dplyr but was slower
+	# weights.lineage <- function(tree, alpha, e) {
+	# 	root_node = length(tree$tip.label) + 1
+	# 	lineage <- lineage.constructor(tree, root_node, e)
+	# 	lineage[["alpha"]] = unlist(alpha[lineage[["state"]]])
+
+	# 	W = matrix(0, ncol = length(alpha), nrow = 1)
+	# 	colnames(W) = sort(names(alpha))
+
+	# 	if (length(lineage[[1]]) > 1) {
+	# 		lineage <- lineage |>
+	# 			dplyr::mutate(
+	# 				exp1 = -1 * expm1(-1 * alpha * time_span),
+	# 				sum2_temp = -1 * alpha * time_span
+	# 			)
+	# 		lineage$exp1[length(lineage$exp1)] = 1
+	# 		lineage$sum2 = 0
+
+	# 		for (i in 2:length(lineage[[1]])) {
+	# 			lineage$sum2[i] = lineage$sum2_temp[i - 1]
+	# 			lineage$sum2_temp[i] = lineage$sum2[i] + lineage$sum2_temp[i]
+	# 		}
+
+	# 		all_weights = lineage |>
+	# 			dplyr::mutate(exp_final = exp1 * exp(sum2)) |>
+	# 			dplyr::group_by(state) |>
+	# 			dplyr::summarise(weight = sum(exp_final))
+
+	# 		for (i in 1:nrow(all_weights)) {
+	# 			W[, all_weights$state[i]] = all_weights$weight[i]
+	# 		}
+	# 	} else {
+	# 		W[, lineage$state[1]] = 1
+	# 	}
+	# 	return(W)
+	# }
+	
 	weights.lineage <- function(tree, alpha, e) {
-		print(paste("Calculating weights for edge:", e))
 		root_node = length(tree$tip.label) + 1
 		lineage <- lineage.constructor(tree, root_node, e)
 		lineage[["alpha"]] = unlist(alpha[lineage[["state"]]])
@@ -44,23 +80,31 @@
 		colnames(W) = sort(names(alpha))
 
 		if (length(lineage[[1]]) > 1) {
-			lineage <- lineage |>
-				dplyr::mutate(
-					exp1 = -1 * expm1(-1 * alpha * time_span),
-					sum2_temp = -1 * alpha * time_span
-				)
+			lineage$exp1 <- -1 * expm1(-1 * lineage$alpha * lineage$time_span)
+			lineage$sum2_temp <- -1 * lineage$alpha * lineage$time_span
 			lineage$exp1[length(lineage$exp1)] = 1
 			lineage$sum2 = 0
 
 			for (i in 2:length(lineage[[1]])) {
 				lineage$sum2[i] = lineage$sum2_temp[i - 1]
-				lineage$sum2_temp[i] = lineage$sum2[i] + lineage$sum2_temp[i]
+				lineage$sum2_temp[i] = lineage$sum2[i] +
+					lineage$sum2_temp[i]
 			}
 
-			all_weights = lineage |>
-				dplyr::mutate(exp_final = exp1 * exp(sum2)) |>
-				dplyr::group_by(state) |>
-				dplyr::summarise(weight = sum(exp_final))
+			lineage$exp_final <- lineage$exp1 * exp(lineage$sum2)
+			
+			# Group by state and compute weights for each state
+			unique_states <- unique(lineage$state)
+			all_weights <- data.frame(
+				state = unique_states,
+				weight = numeric(length(unique_states)),
+				stringsAsFactors = FALSE
+			)
+			
+			for (i in seq_along(unique_states)) {
+				state_indices <- which(lineage$state == unique_states[i])
+				all_weights$weight[i] <- sum(lineage$exp_final[state_indices])
+			}
 
 			for (i in 1:nrow(all_weights)) {
 				W[, all_weights$state[i]] = all_weights$weight[i]
@@ -68,7 +112,6 @@
 		} else {
 			W[, lineage$state[1]] = 1
 		}
-
 		return(W)
 	}
 
@@ -84,6 +127,54 @@
 		return(weight_matrix)
 	}
 
+# Slower using dplyr. 
+	# cov.accum <- function(tree, mrca_node, alpha, sigma2) {
+	# 	root_node = length(tree$tip.label) + 1
+	# 	if (mrca_node == root_node) {
+	# 		cov_accum = 0.0
+	# 	} else {
+	# 		nodes <- nodesAlongLineage(tree, root_node, mrca_node)
+	# 		edges <- which(tree$edge[, 2] %in% nodes) # from root to mcra_node
+	# 		subedge_lengths <- rev(unlist(lapply(edges, function(i) {
+	# 			tree$maps[[i]]
+	# 		}))) # from mcra_node to root
+
+	# 		subedge_lengths <- tibble::tibble(
+	# 			state = names(subedge_lengths),
+	# 			time_span = subedge_lengths,
+	# 			alpha = unlist(alpha[names(subedge_lengths)]),
+	# 			sigma2 = unlist(sigma2[names(subedge_lengths)])
+	# 		) |>
+	# 			dplyr::mutate(
+	# 				exp1 = -1 * expm1(-2 * alpha * time_span),
+	# 				sum2_temp = -2 * alpha * time_span
+	# 			)
+	# 		subedge_lengths$sum2 = 0
+
+	# 		if (length(subedge_lengths[[1]]) == 1) {
+	# 			subedge_lengths = subedge_lengths |>
+	# 				dplyr::mutate(cov = compute.piecewise.with.zero.possible(exp1, sigma2, alpha, time_span))
+	# 			cov_accum = subedge_lengths$cov[[1]]
+	# 		} else {
+	# 			for (i in 2:length(subedge_lengths[[1]])) {
+	# 				subedge_lengths$sum2[i] = subedge_lengths$sum2_temp[i - 1]
+	# 				subedge_lengths$sum2_temp[i] = subedge_lengths$sum2[i] +
+	# 					subedge_lengths$sum2_temp[i]
+	# 			}
+	# 			cov_accum = subedge_lengths |>
+	# 				dplyr::mutate(exp3 = exp1 * exp(sum2)) |>
+	# 				dplyr::group_by(state) |>
+	# 				dplyr::summarise(
+	# 					sum4 = sum(compute.piecewise.with.zero.possible(exp3, sigma2, alpha, time_span))
+	# 				) |>
+	# 				dplyr::reframe(sum_final = sum(sum4)) |>
+	# 				unlist() |>
+	# 				unname()
+	# 		}
+	# 	}
+	# 	return(cov_accum)
+	# }
+	
 	cov.accum <- function(tree, mrca_node, alpha, sigma2) {
 		root_node = length(tree$tip.label) + 1
 		if (mrca_node == root_node) {
@@ -95,21 +186,24 @@
 				tree$maps[[i]]
 			}))) # from mcra_node to root
 
-			subedge_lengths <- tibble::tibble(
+			subedge_lengths <- data.frame(
 				state = names(subedge_lengths),
 				time_span = subedge_lengths,
 				alpha = unlist(alpha[names(subedge_lengths)]),
-				sigma2 = unlist(sigma2[names(subedge_lengths)])
-			) |>
-				dplyr::mutate(
-					exp1 = -1 * expm1(-2 * alpha * time_span),
-					sum2_temp = -2 * alpha * time_span
-				)
-			subedge_lengths$sum2 = 0
+				sigma2 = unlist(sigma2[names(subedge_lengths)]),
+				stringsAsFactors = FALSE
+			)
+			subedge_lengths$exp1 <- -1 * expm1(-2 * subedge_lengths$alpha * subedge_lengths$time_span)
+			subedge_lengths$sum2_temp <- -2 * subedge_lengths$alpha * subedge_lengths$time_span
+			subedge_lengths$sum2 <- 0
 
 			if (length(subedge_lengths[[1]]) == 1) {
-				subedge_lengths = subedge_lengths |>
-					dplyr::mutate(cov = compute.piecewise.with.zero.possible(exp1, sigma2, alpha, time_span))
+				subedge_lengths$cov <- compute.piecewise.with.zero.possible(
+					subedge_lengths$exp1,
+					subedge_lengths$sigma2,
+					subedge_lengths$alpha,
+					subedge_lengths$time_span
+				)
 				cov_accum = subedge_lengths$cov[[1]]
 			} else {
 				for (i in 2:length(subedge_lengths[[1]])) {
@@ -117,15 +211,24 @@
 					subedge_lengths$sum2_temp[i] = subedge_lengths$sum2[i] +
 						subedge_lengths$sum2_temp[i]
 				}
-				cov_accum = subedge_lengths |>
-					dplyr::mutate(exp3 = exp1 * exp(sum2)) |>
-					dplyr::group_by(state) |>
-					dplyr::summarise(
-						sum4 = sum(compute.piecewise.with.zero.possible(exp3, sigma2, alpha, time_span))
-					) |>
-					dplyr::reframe(sum_final = sum(sum4)) |>
-					unlist() |>
-					unname()
+				subedge_lengths$exp3 <- subedge_lengths$exp1 * exp(subedge_lengths$sum2)
+				
+				# Group by state and compute sum4 for each state
+				unique_states <- unique(subedge_lengths$state)
+				sum4_by_state <- numeric(length(unique_states))
+				names(sum4_by_state) <- unique_states
+				
+				for (state in unique_states) {
+					state_indices <- which(subedge_lengths$state == state)
+					sum4_by_state[state] <- sum(compute.piecewise.with.zero.possible(
+						subedge_lengths$exp3[state_indices],
+						subedge_lengths$sigma2[state_indices],
+						subedge_lengths$alpha[state_indices],
+						subedge_lengths$time_span[state_indices]
+					))
+				}
+				
+				cov_accum <- sum(sum4_by_state)
 			}
 		}
 		return(cov_accum)
@@ -162,8 +265,9 @@
 		return(cov_loss_rate)
 	}
 
-	vcv.pairwise <- function(tree, alpha, sigma2, tip1, tip2) {
-		mrca_node <- ape::mrca(tree)[tip1, tip2]
+	vcv.pairwise <- function(tree, alpha, sigma2, tip1, tip2, mrca_matrix) {
+		#mrca_node <- ape::mrca(tree)[tip1, tip2]
+		mrca_node <- mrca_matrix[tip1, tip2]
 
 		cov_accum <- cov.accum(tree, mrca_node, alpha, sigma2)
 		cov_loss1 <- cov.loss(tree, mrca_node, alpha, tip1)
@@ -175,10 +279,11 @@
 	vcv.matrix.lau <- function(tree, alpha, sigma2) {
 		ntip <- length(tree$tip.label)
 		V <- matrix(nrow = ntip, ncol = ntip)
+		mrca_matrix <- ape::mrca(tree)
 		j = ntip
 		while (j != 0) {
 			for (i in 1:ntip) {
-				V[i, j] <- vcv.pairwise(tree, alpha, sigma2, i, j)
+				V[i, j] <- vcv.pairwise(tree, alpha, sigma2, i, j, mrca_matrix)
 				V[j, i] <- V[i, j]
 			}
 			j = j - 1

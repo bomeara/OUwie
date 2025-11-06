@@ -9,13 +9,21 @@
 #global OU (OU1), multiple regime OU (OUM), multiple sigmas (OUMV), multiple alphas (OUMA),
 #and the multiple alphas and sigmas (OUMVA).
 
-OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none", starting.vals=NULL, check.identify=TRUE, algorithm=c("invert", "three.point"), diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000", "ftol_rel"=.Machine$double.eps^0.5), corrected=TRUE){
+OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMVA", "TrendyM", "TrendyMS"), simmap.tree=FALSE, root.age=NULL, scaleHeight=FALSE, root.station=FALSE, get.root.theta=FALSE, shift.point=0.5, clade=NULL, tip.fog="none", starting.vals=NULL, check.identify=TRUE, algorithm=c("invert", "three.point"), diagn=FALSE, quiet=FALSE, warn=TRUE, lb = NULL, ub = NULL, opts = list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000", "ftol_rel"=.Machine$double.eps^0.5), corrected='auto'){
 	# fixed!
 	# if(model %in% c("OUMA", "OUMVA", "OUVA")) {
 	# #	warning("From feedback from a user, we have concerns about the likelihood function for the OUMA and OUMVA models. As of Sept. 4, 2025, we recommend not using these models for now, but we expect the situation to be resolved soon (either with corrected likelihood functions or a definite proof that they are ok as is). That said, we leave these as options for reproducibility and debugging. If you do use them, be sure to note the package version and report this in your work.", call.=FALSE, immediate.=TRUE)	
 	# }
 
 	#phy <- reorder.phylo(phy, "cladewise") # BCO removing this as reordering does not work for simmap trees
+	
+	if(corrected=="auto") {
+		if(grepl("A", model)) {
+			corrected <- TRUE
+		} else {
+			corrected <- FALSE
+		}	
+	}
 	
 	if(!simmap.tree) {
 		phy <- node_label_tree_to_simmap_tree(phy, data, shift.point)	
@@ -479,41 +487,41 @@ OUwie <- function(phy, data, model=c("BM1","BMS","OU1","OUM","OUMV","OUMA","OUMV
 	}
   
 	# upper and lower bounds
-	if(algorithm == "three.point"){
-	  if(max(index.mat[1,]) > max(index.mat[2,])){
-	    k.alpha <- 0
-	    k.sigma <- length(unique(index.mat[2,]))
-	  }else{
-	    k.alpha <- length(unique(index.mat[1,]))
-	    k.sigma <- length(unique(index.mat[2,]))
-	  }
-	  if(is.null(lb)){
-	    lb.alpha <- 1e-9
-	    lb.sigma <- 1e-9
-	    lower = c(rep(log(lb.alpha), k.alpha), rep(log(lb.sigma), k.sigma))
-	    lb <- 1e-9
-	  }else{
-	    lower = c(rep(log(lb[1]), k.alpha), rep(log(lb[2]), k.sigma))
-	    lb <- lb[3] # theta's are added later
-	  }
-	  if(is.null(ub)){
-	    ub.alpha <- 100
-	    ub.sigma <- 100
-	    upper = c(rep(log(ub.alpha), k.alpha), rep(log(ub.sigma), k.sigma))
-	    ub <- 100
-	  }else{
-	    upper = c(rep(log(ub[1]), k.alpha), rep(log(ub[2]), k.sigma))
-	    ub <- ub[3] # theta's are added later
-	  }
-	}else{
-	  if(is.null(lb)){
-	    lb <- 1e-9
-	  }
-	  if(is.null(ub)){
-	    ub <- 100
-	  }
-	  lower = rep(log(lb), np)
-	  upper = rep(log(ub), np)	
+	if (algorithm == "three.point") {
+		if (max(index.mat[1, ]) > max(index.mat[2, ])) {
+			k.alpha <- 0
+			k.sigma <- length(unique(index.mat[2, ]))
+		} else {
+			k.alpha <- length(unique(index.mat[1, ]))
+			k.sigma <- length(unique(index.mat[2, ]))
+		}
+		if (is.null(lb)) {
+			lb.alpha <- 1e-9
+			lb.sigma <- 1e-9
+			lower = c(rep(log(lb.alpha), k.alpha), rep(log(lb.sigma), k.sigma))
+			lb <- 1e-9
+		} else {
+			lower = c(rep(log(lb[1]), k.alpha), rep(log(lb[2]), k.sigma))
+			lb <- lb[3] # theta's are added later
+		}
+		if (is.null(ub)) {
+			ub.alpha <- 100
+			ub.sigma <- 100
+			upper = c(rep(log(ub.alpha), k.alpha), rep(log(ub.sigma), k.sigma))
+			ub <- 100
+		} else {
+			upper = c(rep(log(ub[1]), k.alpha), rep(log(ub[2]), k.sigma))
+			ub <- ub[3] # theta's are added later
+		}
+	} else {
+		if (is.null(lb)) {
+			lb <- 1e-9
+		}
+		if (is.null(ub)) {
+			ub <- 100
+		}
+		lower = rep(log(lb), np)[1:np] #[1:np] so it works for a single passed in value or multiple
+		upper = rep(log(ub), np)[1:np]
 	}
 
 	# for any downstream usage, we default to the old treatment of lb and ub
