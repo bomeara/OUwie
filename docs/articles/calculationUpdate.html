@@ -136,18 +136,19 @@ implemented the equations correctly should be fine, this is just an
 issue with how OUwie implemented the calculations.</p>
 <p><strong>Can I verify how this affects my analyses?</strong></p>
 <p>Yes, with OUwie() and similar functions we have added a
-<code>corrected</code> argument that defaults to TRUE. If you set
-<code>corrected=FALSE</code>, it will use the old (incorrect) method for
-calculating the variance-covariance matrix. You can compare results with
-<code>corrected=TRUE</code> and <code>corrected=FALSE</code> to see how
-much of a difference it makes for your specific analysis. We wanted to
-make sure that any problems are transparent and reproducible.</p>
+<code>corrected</code> argument that defaults to <code>'auto'</code>
+where it uses the newer, currently slower algorithm for models with
+heterogeneous alpha and the old algorithm for the ones where this
+doesn’t matter. If you set <code>corrected=FALSE</code>, it will always
+use the old method for calculating the variance-covariance matrix, and
+if you set <code>corrected=TRUE</code>, it will always use the new
+method. You can compare results with <code>corrected=TRUE</code> and
+<code>corrected=FALSE</code> to see how much of a difference it makes
+for your specific analysis. We wanted to make sure that any problems are
+transparent and reproducible.</p>
 <p><strong>Will this affect OUwie in general?</strong></p>
-<p>Given how we implemented this, OUwie will run more slowly for all
-models. One can use the older, faster algorithm, which is correct for
-BM1, BMS, OU1, OUM, and OUMV models, by setting
-<code>corrected=FALSE</code>. However, for OUMA and OUMVA models, one
-should use <code>corrected=TRUE</code> to get the correct results.</p>
+<p>Given how we implemented this, OUwie will run more slowly for OUMA
+and OUMVA models.</p>
 <p>We’ll be updating this to make it faster (probably also automatically
 switching between algorithms) in future versions of OUwie, but we wanted
 to put out a slow but correct version as soon as possible.</p>
