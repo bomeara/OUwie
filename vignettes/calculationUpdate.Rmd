@@ -23,17 +23,23 @@ library(corHMM)
 library(ggplot2)
 ```
 
+There was an issue in OUMA and OUMVA models in OUwie versions from its origin through 2.17. This has now been fixed. Details below:
+
+### Timeline
+
 Priscilla Lau reached out to Jeremy Beaulieu in Aug, 2025, at a conference about an issue she and her collaborators (Bjørn Kopperud and Sebastian Höhna) found in how OUwie calculates the variance-covariance matrix under the OU model when there are different alphas, as well as an error in one of the equations in the original Beaulieu et al. (2012) paper. She followed up with an email on Sept 3, 2025; after a discussion of how best to handle this, we put a warning on the use of models with different alphas in OUwie (on Sept. 6, 2025). A further email from Priscilla and colleagues had additional details on the issues. 
 
-First, the equation:
+### Equation error in paper
 
-In the appendix on page 2383 when it describes the covariation under an OU_MVA model, the final term is __latex___ when it should be ___latex___, as it is correctly written in equation A.26.
+In the appendix on page 2383 when it describes the covariation under an OU_MVA model, the final term is __latex___ when it should be ___latex___, as it is correctly written in equation A.26. This is unrelated to the issue below but still worth noting.
+
+### Variance-covariance matrix calculation error in OUwie
 
 Second, and of great practical significance, the way OUwie calculated the variance-covariance matrix under the OU model with multiple alphas was indeed incorrect. With an Ornstein-Uhlenbeck process, shared variance decays based on the alpha parameter: with stronger alpha, what matters more is where two tips are being pulled to rather than their shared history. When calculating this up the tree, OUwie versions before 2.18 used a constant alpha rather than varying it based on the different regimes. This means that the variance-covariance matrix and weight vectors were calculated incorrectly when there are multiple alphas (OUMVA and OUMA models). 
 
 Adopting the corrections proposed by Priscilla Lau and colleagues, we have updated the code in OUwie version 2.18 (released Nov. 6, 2025) to correctly calculate the variance-covariance matrix under the OU model with multiple alphas. We thank Priscilla Lau, Bjørn Kopperud, and Sebastian Höhna for their careful work in identifying this issue and proposing a solution.
 
-So, some expected questions:
+### FAQ
 
 **How big of a difference does this make?**
 

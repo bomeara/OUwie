@@ -93,6 +93,11 @@ Bjørn Kopperud, Sebastian Höhna, Jeremy Beaulieu, and Brian O’Meara</h4>
 
     
     
+<p>There was an issue in OUMA and OUMVA models in OUwie versions from
+its origin through 2.17. This has now been fixed. Details below:</p>
+<div class="section level3">
+<h3 id="timeline">Timeline<a class="anchor" aria-label="anchor" href="#timeline"></a>
+</h3>
 <p>Priscilla Lau reached out to Jeremy Beaulieu in Aug, 2025, at a
 conference about an issue she and her collaborators (Bjørn Kopperud and
 Sebastian Höhna) found in how OUwie calculates the variance-covariance
@@ -102,11 +107,19 @@ paper. She followed up with an email on Sept 3, 2025; after a discussion
 of how best to handle this, we put a warning on the use of models with
 different alphas in OUwie (on Sept. 6, 2025). A further email from
 Priscilla and colleagues had additional details on the issues.</p>
-<p>First, the equation:</p>
+</div>
+<div class="section level3">
+<h3 id="equation-error-in-paper">Equation error in paper<a class="anchor" aria-label="anchor" href="#equation-error-in-paper"></a>
+</h3>
 <p>In the appendix on page 2383 when it describes the covariation under
 an OU_MVA model, the final term is <strong>latex</strong>_ when it
 should be <strong><em>latex</em></strong>, as it is correctly written in
-equation A.26.</p>
+equation A.26. This is unrelated to the issue below but still worth
+noting.</p>
+</div>
+<div class="section level3">
+<h3 id="variance-covariance-matrix-calculation-error-in-ouwie">Variance-covariance matrix calculation error in OUwie<a class="anchor" aria-label="anchor" href="#variance-covariance-matrix-calculation-error-in-ouwie"></a>
+</h3>
 <p>Second, and of great practical significance, the way OUwie calculated
 the variance-covariance matrix under the OU model with multiple alphas
 was indeed incorrect. With an Ornstein-Uhlenbeck process, shared
@@ -123,7 +136,10 @@ correctly calculate the variance-covariance matrix under the OU model
 with multiple alphas. We thank Priscilla Lau, Bjørn Kopperud, and
 Sebastian Höhna for their careful work in identifying this issue and
 proposing a solution.</p>
-<p>So, some expected questions:</p>
+</div>
+<div class="section level3">
+<h3 id="faq">FAQ<a class="anchor" aria-label="anchor" href="#faq"></a>
+</h3>
 <p><strong>How big of a difference does this make?</strong></p>
 <p>The exact impact will depend on the tree, the alpha values, and the
 data. In some cases it could be substantial. There is no predicted
@@ -154,6 +170,7 @@ switching between algorithms) in future versions of OUwie, but we wanted
 to put out a slow but correct version as soon as possible.</p>
 <p><strong>Was hOUwie affected?</strong></p>
 <p>Yes, in the same way, and corrected in the same way.</p>
+</div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
