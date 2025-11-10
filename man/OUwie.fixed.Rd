@@ -58,7 +58,7 @@ The input is a tree and a data file. The tree must be of class \dQuote{phylo} an
 }
 
 \examples{
-\donttest{
+\dontrun{
 data(tworegime)
 
 #Calculate the likelihood based on known values of

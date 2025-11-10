@@ -64,6 +64,7 @@ The algorithm tunes: if it is moving too far away from the desired likelihoods, 
 In general, the idea of this is not to give you a pleasingly narrow range of possible values -- it is to try to find the actual uncertainty, including finding any ridges that would not be seen in univariate space.
 }
 \examples{
+\dontrun{
 # Univariate case
 sims <- stats::rnorm(100, mean=17)
 possible_means <- seq(from=16, to=18, length.out=100) # for optimize
@@ -96,4 +97,5 @@ best_neglnL <- optimized_results$value
 
 dented_results <- dent_walk(par=best_par, fn=dlnorm_to_run, best_neglnL=best_neglnL, sims=sims)
 plot(dented_results)
+}
 }

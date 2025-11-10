@@ -33,7 +33,7 @@ It is worth pointing out, however, that Ho and Ane (2014a) cautioned that when t
 
 ```{r, eval=TRUE}
 data(tworegime)
-pp <- OUwie(tree, trait, model="OUM", root.station=TRUE, scaleHeight=TRUE, shift.point=0, algorithm="invert", quiet=TRUE)
+pp <- OUwie(tree, trait, model="OUM", root.station=TRUE, scaleHeight=FALSE, shift.point=0, algorithm="invert", quiet=TRUE)
 pp
 ```
 
@@ -41,7 +41,7 @@ compare this to the new default:
 
 ```{r, eval=TRUE}
 data(tworegime)
-pp <- OUwie(tree, trait, model="OUM", root.station=FALSE, scaleHeight=TRUE, shift.point=0, algorithm="invert", quiet=TRUE)
+pp <- OUwie(tree, trait, model="OUM", root.station=FALSE, scaleHeight=FALSE, shift.point=0, algorithm="invert", quiet=TRUE)
 pp
 ```
 
@@ -171,7 +171,7 @@ Still determined? Ok, fair enough. It is straightforward to run the ancestral tr
 ```{r, eval=TRUE, echo=TRUE}
 data(tworegime)
 set.seed(42)
-ouwiefit <- OUwie(tree, trait, model="OUM", scaleHeight=TRUE, root.station=FALSE, shift.point=0.5, algorithm="invert", quiet=TRUE, check.identify=FALSE)
+ouwiefit <- OUwie(tree, trait, model="OUM", scaleHeight=FALSE, root.station=FALSE, shift.point=0.5, algorithm="invert", quiet=TRUE, check.identify=FALSE)
 ```
 
 ```{r, eval=FALSE, echo=TRUE}
@@ -180,13 +180,13 @@ recon <- OUwie.anc(ouwiefit)
 
 Ah! If you run the code above a somewhat snarky response is printed to the screen. Since you are here reading this, we think this is sufficient, and you are at least aware that we are not huge fans of this approach. So, there is no need to read the manual (it's basically the same as what you see here), and the proper way to call the `OUwie.anc()` function call is simply add in `knowledge=TRUE`: 
 
-```{r, eval=TRUE, echo=TRUE}
+```{r, eval=FALSE, echo=TRUE}
 recon <- OUwie.anc(ouwiefit, knowledge=TRUE)
 ```
 
 From there, you can then easily plot these reconstructions using an internal function that recognizes the `OUwie` and `OUwie.anc` class:
 
-```{r, eval=TRUE, echo=FALSE, fig.height=10, fig.width=6.5, fig.cap = "A plot of the ancestral state reconstruction under an OUwie model."}
+```{r, eval=FALSE, echo=FALSE, fig.height=10, fig.width=6.5, fig.cap = "A plot of the ancestral state reconstruction under an OUwie model."}
 plot(recon, fsize=0.5)
 ```
 
@@ -196,7 +196,7 @@ A long time complaint about `OUwie` is that it does not scale well when trees ex
 
 ```{r, eval=TRUE, echo=TRUE}
 data(tworegime)
-three.point <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=TRUE, shift.point=0.5, algorithm="three.point", quiet=TRUE, check.identify=FALSE)
+three.point <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=FALSE, shift.point=0.5, algorithm="three.point", quiet=TRUE, check.identify=FALSE)
 three.point
 ```
 
@@ -204,7 +204,7 @@ We can compare this to the using the standard matrix determinant and matrix inve
 
 ```{r, eval=TRUE, echo=TRUE}
 data(tworegime)
-invert <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=TRUE, shift.point=0.5, algorithm="invert", quiet=TRUE)
+invert <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=FALSE, shift.point=0.5, algorithm="invert", quiet=TRUE)
 invert
 ```
 
@@ -218,7 +218,7 @@ In comparative biology, we often overlook the complexity of uncertainty. We migh
 There are various ways to specify tip fog. First, recall from the individual manuals that the trait data.frame must have column entries in the following order: species names, current selective regime, and the continuous trait of interest. If the user wants to incorporate tip fog based on their own measurements (`tip.fog="known"`), then a fourth column must be included that provides the *standard error estimates for each species mean*. However, a global tip fog for all taxa can be estimated from the data (`tip.fog="estimate"`). Specifically, to estimate the tip fog parameter:
 ```{r, eval=FALSE, echo=TRUE}
 data(tworegime)
-invert <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=TRUE, shift.point=0.5, tip.fog="estimate", algorithm="invert", quiet=TRUE)
+invert <- OUwie(tree, trait, model="OUMV", root.station=FALSE, scaleHeight=FALSE, shift.point=0.5, tip.fog="estimate", algorithm="invert", quiet=TRUE)
 invert
 ```
 

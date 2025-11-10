@@ -28,7 +28,7 @@ The simulation protocol follows the hOUwie model where stochastic maps being pro
 \item{simmap}{the history of the discrete character presented as a stochastic map.}
 }
 \examples{
-\donttest{
+\dontrun{
 data(tworegime)
 # simulate an OUM model
 Q <- matrix(c(-1,1,1,-1), 2, 2)

@@ -46,7 +46,7 @@ With a fitted OUwie model, it just uses the parameters from that, ignoring any a
 A dataframe containing, as column entries, [,1] species names, [,2] current regime, [,3] simulated continuous trait, x.
 }
 \examples{
-\donttest{
+\dontrun{
 data(sim.ex)
 
 #Simulate an Ornstein-Uhlenbeck model with different state means

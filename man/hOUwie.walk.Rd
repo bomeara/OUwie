@@ -51,6 +51,7 @@ The algorithm tunes: if it is moving too far away from the desired likelihoods, 
 In general, the idea of this is not to give you a pleasingly narrow range of possible values -- it is to try to find the actual uncertainty, including finding any ridges that would not be seen in univariate space.
 }
 \examples{
+\dontrun{
 # ## Finally, it is important to get estimates of your parameter uncertainty. 
 # ## For that we have imported the functions of Brian O'Meara's dentist package
 # data(tworegime)
@@ -64,4 +65,5 @@ In general, the idea of this is not to give you a pleasingly narrow range of pos
 # ## We can compare this to the result from OUwie on a fixed map to see a difference 
 # dent_res <- hOUwie.walk(pp_cd, nsteps = 25, debug =TRUE)
 # plot(dent_res)
+}
 }

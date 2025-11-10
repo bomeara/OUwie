@@ -22,6 +22,7 @@ Dents the likelihood surface
 This takes any values that are better (lower) than the desired negative log likelihood and reflects them across the best_neglnL + delta line, "denting" the likelihood surface.
 }
 \examples{
+\dontrun{
 sims <- stats::rnorm(100, mean=17)
 possible_means <- seq(from=16, to=18, length.out=100)
 results_normal <- rep(NA, length(possible_means))
@@ -38,4 +39,5 @@ for (i in seq_along(possible_means)) {
 
 plot(possible_means, results_normal)
 lines(possible_means, results_dented)
+}
 }

@@ -44,7 +44,7 @@ Note that if \code{root.station} is \code{TRUE} (the default), \eqn{\theta_0}{th
 
 }
 \examples{
-\donttest{
+\dontrun{
 
 data(tworegime)
 

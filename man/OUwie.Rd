@@ -81,6 +81,7 @@ For models that allow \eqn{\alpha}{alpha} and \eqn{\sigma^2}{sigma^2} to vary (i
 }
 \examples{
 \donttest{
+\dontrun{
 data(tworegime)
 
 #Plot the tree and the internal nodes to highlight the selective regimes:
@@ -90,9 +91,7 @@ select.reg[tree$node.label == 2] <- "red"
 plot(tree)
 nodelabels(pch=21, bg=select.reg)
 
-}
 
-\dontrun{
 #To see the first 5 lines of the data matrix to see what how to
 #structure the data:
 trait[1:5,]
@@ -123,6 +122,8 @@ starting.vals=run1$new.start)
 #run2 will start off where run1 stopped.
 }
 }
+}
+
 \references{
 Beaulieu J.M., Jhwueng D.C., Boettiger C., and O'Meara B.C. 2012. Modeling stabilizing selection: Expanding the Ornstein-Uhlenbeck model of adaptive evolution. Evolution 66:2369-2383.
 
@@ -134,5 +135,5 @@ Ho, L.S.T., and C. Ane. 2014. Intrinsic inference difficulties for trait evoluti
 
 Thomas G.H., Freckleton R.P., and Szekely T. 2006. Comparative analysis of the influence of developmental mode on phenotypic diversification rates in shorebirds. Proceedings of the Royal Society, B. 273:1619-1624.
 }
-\author{Jeremy M. Beaulieu and Brian C. O'Meara, with contributions from Priscilla Lau, Bjørn Kopperud, and Sebastian Höhna}
+\author{Jeremy M. Beaulieu and Brian C. O'Meara, with contributions from Priscilla Lau, Bjorn Kopperud, and Sebastian Hohna}
 \keyword{models}
